@@ -22,6 +22,7 @@ const defaultSettings: AppSettings = {
     fertileWindowOpen: false,
     peakFertility: false,
     lowFertility: false,
+    fertilityIntent: 'none',
     dailyLogReminder: false,
     cycleSummary: true,
     pillReminder: false,
@@ -35,6 +36,7 @@ const defaultSettings: AppSettings = {
   fertilityTrackingEnabled: false,
   partnerSharingEnabled: false,
   theme: 'system',
+  colorTheme: 'roseGarden' as const,
   gdprConsentGiven: false,
   dataCategories: {
     cycleData: true,

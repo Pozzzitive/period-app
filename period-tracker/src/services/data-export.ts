@@ -4,6 +4,7 @@ import { useCycleStore } from '../stores/cycle-store';
 import { useLogStore } from '../stores/log-store';
 import { useUserStore } from '../stores/user-store';
 import { useSettingsStore } from '../stores/settings-store';
+import { deleteAllPhotos } from '../utils/photos';
 
 export interface ExportData {
   exportDate: string;
@@ -45,6 +46,7 @@ export async function shareExport(uri: string): Promise<void> {
 }
 
 export function deleteAllData(): void {
+  deleteAllPhotos();
   useCycleStore.getState().clearAll();
   useLogStore.getState().clearAll();
   useUserStore.getState().clearAll();

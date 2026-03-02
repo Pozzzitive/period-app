@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptionStore } from '@/src/stores';
+import { useTheme } from '@/src/theme';
+import type { ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function PaywallScreen() {
   const router = useRouter();
   const setSubscription = useSubscriptionStore((s) => s.setSubscription);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handlePurchase = (period: 'monthly' | 'yearly') => {
     // In production: use react-native-iap to process purchase
@@ -47,12 +53,12 @@ export default function PaywallScreen() {
 
       {/* Features list */}
       <View style={styles.featuresList}>
-        <FeatureItem emoji="📊" text="Symptom pattern insights" desc="Discover trends in your symptoms" />
-        <FeatureItem emoji="📈" text="Cycle-over-cycle trend graphs" desc="Compare your last 3/6/12 cycles" />
-        <FeatureItem emoji="🏷️" text="Custom symptom tags" desc="Create your own symptom categories" />
-        <FeatureItem emoji="📋" text="Extended analytics & reports" desc="Detailed cycle analysis" />
-        <FeatureItem emoji="📄" text="Export as PDF" desc="Share with your healthcare provider" />
-        <FeatureItem emoji="📱" text="Home screen widget" desc="Period countdown at a glance" />
+        <FeatureItem iconName="analytics-outline" text="Symptom pattern insights" desc="Discover trends in your symptoms" styles={styles} colors={colors} />
+        <FeatureItem iconName="trending-up-outline" text="Cycle-over-cycle trend graphs" desc="Compare your last 3/6/12 cycles" styles={styles} colors={colors} />
+        <FeatureItem iconName="pricetag-outline" text="Custom symptom tags" desc="Create your own symptom categories" styles={styles} colors={colors} />
+        <FeatureItem iconName="document-text-outline" text="Extended analytics & reports" desc="Detailed cycle analysis" styles={styles} colors={colors} />
+        <FeatureItem iconName="download-outline" text="Export as PDF" desc="Share with your healthcare provider" styles={styles} colors={colors} />
+        <FeatureItem iconName="phone-portrait-outline" text="Home screen widget" desc="Period countdown at a glance" styles={styles} colors={colors} />
       </View>
 
       {/* Pricing */}
@@ -82,10 +88,10 @@ export default function PaywallScreen() {
   );
 }
 
-function FeatureItem({ emoji, text, desc }: { emoji: string; text: string; desc: string }) {
+function FeatureItem({ iconName, text, desc, styles, colors }: { iconName: React.ComponentProps<typeof Ionicons>['name']; text: string; desc: string; styles: ReturnType<typeof createStyles>; colors: ThemeColors }) {
   return (
     <View style={styles.featureRow}>
-      <Text style={styles.featureEmoji}>{emoji}</Text>
+      <Ionicons name={iconName} size={s(24)} color={colors.primary} />
       <View style={styles.featureText}>
         <Text style={styles.featureTitle}>{text}</Text>
         <Text style={styles.featureDesc}>{desc}</Text>
@@ -94,105 +100,102 @@ function FeatureItem({ emoji, text, desc }: { emoji: string; text: string; desc:
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: s(20),
+    paddingBottom: s(40),
   },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
-    color: '#E74C3C',
+    color: colors.primary,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: s(4),
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: fs(16),
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: s(24),
   },
   featuresList: {
-    gap: 14,
-    marginBottom: 28,
+    gap: s(14),
+    marginBottom: s(28),
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-  },
-  featureEmoji: {
-    fontSize: 24,
+    gap: s(12),
   },
   featureText: {
     flex: 1,
   },
   featureTitle: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   featureDesc: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginTop: s(2),
   },
   planCard: {
-    backgroundColor: '#E74C3C',
-    padding: 20,
-    borderRadius: 14,
+    backgroundColor: colors.primary,
+    padding: s(20),
+    borderRadius: s(14),
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: s(10),
     position: 'relative',
   },
   planCardSecondary: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
     borderWidth: 2,
-    borderColor: '#E74C3C',
+    borderColor: colors.primary,
   },
   saveBadge: {
     position: 'absolute',
-    top: -10,
-    right: 16,
-    backgroundColor: '#27AE60',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    top: s(-10),
+    right: s(16),
+    backgroundColor: colors.success,
+    paddingHorizontal: s(10),
+    paddingVertical: s(4),
+    borderRadius: s(10),
   },
   saveText: {
-    color: '#fff',
-    fontSize: 12,
+    color: colors.onPrimary,
+    fontSize: fs(12),
     fontWeight: 'bold',
   },
   planPrice: {
-    fontSize: 22,
+    fontSize: fs(22),
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.onPrimary,
   },
   planPer: {
-    fontSize: 14,
+    fontSize: fs(14),
     color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
+    marginTop: s(2),
   },
   restoreButton: {
     alignItems: 'center',
-    paddingVertical: 14,
-    marginTop: 4,
+    paddingVertical: s(14),
+    marginTop: s(4),
   },
   restoreText: {
-    fontSize: 15,
-    color: '#E74C3C',
+    fontSize: fs(15),
+    color: colors.primary,
     fontWeight: '500',
   },
   disclaimer: {
-    fontSize: 11,
-    color: '#999',
+    fontSize: fs(11),
+    color: colors.textMuted,
     textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 16,
+    marginTop: s(8),
+    lineHeight: fs(16),
   },
 });

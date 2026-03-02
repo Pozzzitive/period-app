@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '@/src/stores';
 import { HEALTH_CONDITIONS } from '@/src/constants/conditions';
+import { useTheme } from '@/src/theme';
+import type { ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function HealthConditionsSettingsScreen() {
   const profile = useUserStore((s) => s.profile);
   const addCondition = useUserStore((s) => s.addHealthCondition);
   const removeCondition = useUserStore((s) => s.removeHealthCondition);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const toggleCondition = (id: string) => {
     if (profile.healthConditions.includes(id)) {
@@ -36,7 +42,7 @@ export default function HealthConditionsSettingsScreen() {
                 {condition.label}
               </Text>
               <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
-                {selected && <Text style={styles.checkmark}>✓</Text>}
+                {selected && <Ionicons name="checkmark" size={s(16)} color={colors.onPrimary} />}
               </View>
             </View>
             <Text style={styles.cardDesc}>{condition.description}</Text>
@@ -50,78 +56,73 @@ export default function HealthConditionsSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: s(16),
+    paddingBottom: s(32),
   },
   info: {
-    fontSize: 14,
-    color: '#666',
-    backgroundColor: '#E3F2FD',
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 16,
-    lineHeight: 20,
+    fontSize: fs(14),
+    color: colors.textSecondary,
+    backgroundColor: colors.infoLight,
+    padding: s(14),
+    borderRadius: s(10),
+    marginBottom: s(16),
+    lineHeight: fs(20),
   },
   card: {
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(8),
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   cardSelected: {
-    borderColor: '#E74C3C',
-    backgroundColor: '#FFF0F0',
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: s(4),
   },
   cardLabel: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     flex: 1,
   },
   cardLabelSelected: {
-    color: '#E74C3C',
+    color: colors.primary,
   },
   cardDesc: {
-    fontSize: 13,
-    color: '#888',
+    fontSize: fs(13),
+    color: colors.textTertiary,
   },
   insight: {
-    fontSize: 13,
-    color: '#2E7D32',
-    marginTop: 8,
+    fontSize: fs(13),
+    color: colors.success,
+    marginTop: s(8),
     fontStyle: 'italic',
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: s(24),
+    height: s(24),
+    borderRadius: s(12),
     borderWidth: 2,
-    borderColor: '#CCC',
+    borderColor: colors.textDisabled,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: s(12),
   },
   checkboxChecked: {
-    backgroundColor: '#E74C3C',
-    borderColor: '#E74C3C',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 });

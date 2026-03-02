@@ -120,6 +120,52 @@ export function predictNextPeriod(
   return result;
 }
 
+// ============================================================
+// Multiple Period Predictions
+// ============================================================
+
+export interface PredictedPeriod {
+  startDate: string;   // yyyy-MM-dd
+  endDate: string;     // yyyy-MM-dd
+  cycleNumber: number; // 1-based (1 = next, 2 = the one after, etc.)
+  cycleLength: number;
+  periodLength: number;
+}
+
+/**
+ * Predict multiple future periods by chaining forward from the last logged cycle.
+ */
+export function predictMultiplePeriods(
+  cycles: Cycle[],
+  count: number,
+  typicalCycleLength: number = DEFAULT_CYCLE_LENGTH,
+  typicalPeriodLength: number = DEFAULT_PERIOD_LENGTH,
+): PredictedPeriod[] {
+  if (count <= 0 || cycles.length === 0) return [];
+
+  const prediction = predictNextPeriod(cycles, typicalCycleLength, typicalPeriodLength);
+  if (!prediction) return [];
+
+  const { predictedCycleLength, predictedPeriodLength } = prediction;
+  const results: PredictedPeriod[] = [];
+
+  let currentStart = parseISO(prediction.nextPeriodStart);
+
+  for (let i = 1; i <= count; i++) {
+    const endDate = addDays(currentStart, predictedPeriodLength - 1);
+    results.push({
+      startDate: format(currentStart, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd'),
+      cycleNumber: i,
+      cycleLength: predictedCycleLength,
+      periodLength: predictedPeriodLength,
+    });
+    currentStart = addDays(currentStart, predictedCycleLength);
+  }
+
+  return results;
+}
+
 /**
  * Check if a "missing period" prompt should be shown.
  * Trigger: today > predicted start + 7 days AND no period logged.

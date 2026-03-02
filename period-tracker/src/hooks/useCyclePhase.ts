@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { differenceInDays, parseISO } from 'date-fns';
 import { useCycleStore } from '../stores';
 import { useUserStore } from '../stores';
 import { calculatePhase } from '../engine';
@@ -25,6 +26,13 @@ export function useCyclePhase(dateStr?: string): PhaseInfo | null {
     const cycleLength = activeCycle.cycleLength ?? profile.typicalCycleLength;
     const periodLength = activeCycle.periodLength ?? profile.typicalPeriodLength;
 
-    return calculatePhase(date, activeCycle.startDate, cycleLength, periodLength);
+    // For ongoing cycle, stretch phases when period is late
+    let effectiveLength: number | undefined;
+    if (!activeCycle.endDate) {
+      const todayDay = differenceInDays(parseISO(todayString()), parseISO(activeCycle.startDate)) + 1;
+      if (todayDay > cycleLength) effectiveLength = todayDay;
+    }
+
+    return calculatePhase(date, activeCycle.startDate, cycleLength, periodLength, effectiveLength);
   }, [cycles, profile.typicalCycleLength, profile.typicalPeriodLength, date]);
 }

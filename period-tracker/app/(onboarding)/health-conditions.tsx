@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,19 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '@/src/stores';
 import { HEALTH_CONDITIONS } from '@/src/constants/conditions';
+import { useTheme, type ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function HealthConditionsScreen() {
   const router = useRouter();
   const profile = useUserStore((s) => s.profile);
   const addCondition = useUserStore((s) => s.addHealthCondition);
   const removeCondition = useUserStore((s) => s.removeHealthCondition);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const toggleCondition = (id: string) => {
     if (profile.healthConditions.includes(id)) {
@@ -47,7 +52,7 @@ export default function HealthConditionsScreen() {
                   {condition.label}
                 </Text>
                 <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
-                  {selected && <Text style={styles.checkmark}>✓</Text>}
+                  {selected && <Ionicons name="checkmark" size={s(16)} color={colors.onPrimary} />}
                 </View>
               </View>
               <Text style={styles.conditionDesc}>{condition.description}</Text>
@@ -74,106 +79,101 @@ export default function HealthConditionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
-    padding: 24,
+    backgroundColor: colors.background,
+    padding: s(24),
   },
   content: {
-    paddingTop: 40,
-    paddingBottom: 24,
+    paddingTop: s(40),
+    paddingBottom: s(24),
   },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: s(8),
   },
   subtitle: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 24,
+    fontSize: fs(15),
+    color: colors.textSecondary,
+    marginBottom: s(24),
   },
   conditionCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(12),
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   conditionSelected: {
-    borderColor: '#E74C3C',
-    backgroundColor: '#FFF0F0',
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted,
   },
   conditionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: s(4),
   },
   conditionLabel: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     flex: 1,
   },
   conditionLabelSelected: {
-    color: '#E74C3C',
+    color: colors.primary,
   },
   conditionDesc: {
-    fontSize: 13,
-    color: '#888',
-    lineHeight: 18,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    lineHeight: fs(18),
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: s(24),
+    height: s(24),
+    borderRadius: s(12),
     borderWidth: 2,
-    borderColor: '#CCC',
+    borderColor: colors.textDisabled,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: s(12),
   },
   checkboxChecked: {
-    backgroundColor: '#E74C3C',
-    borderColor: '#E74C3C',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   buttons: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: s(12),
+    marginBottom: s(16),
   },
   skipButton: {
     flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: s(16),
+    borderRadius: s(12),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E74C3C',
+    borderColor: colors.primary,
   },
   skipText: {
-    color: '#E74C3C',
-    fontSize: 18,
+    color: colors.primary,
+    fontSize: fs(18),
     fontWeight: '600',
   },
   button: {
     flex: 2,
-    backgroundColor: '#E74C3C',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: s(16),
+    borderRadius: s(12),
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: colors.onPrimary,
+    fontSize: fs(18),
     fontWeight: '600',
   },
 });

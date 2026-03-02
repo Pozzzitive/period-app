@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCycleStore } from '../../stores';
 import { todayString } from '../../utils/dates';
 import type { MissingPeriodResponse } from '../../models';
+import { useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme';
+import { s, fs } from '../../utils/scale';
 
 interface MissingPeriodPromptProps {
   onDismiss: () => void;
@@ -11,7 +14,9 @@ interface MissingPeriodPromptProps {
 
 export function MissingPeriodPrompt({ onDismiss }: MissingPeriodPromptProps) {
   const router = useRouter();
+  const { colors } = useTheme();
   const addPeriod = useCycleStore((s) => s.addPeriod);
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleResponse = (response: MissingPeriodResponse) => {
     switch (response) {
@@ -68,51 +73,52 @@ export function MissingPeriodPrompt({ onDismiss }: MissingPeriodPromptProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#FFF8E1',
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FFE082',
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#F57F17',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  options: {
-    gap: 8,
-  },
-  optionButton: {
-    backgroundColor: '#E74C3C',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  optionPrimary: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  optionButtonSecondary: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  optionSecondary: {
-    color: '#333',
-    fontSize: 15,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.warningLight,
+      padding: s(20),
+      borderRadius: s(16),
+      marginBottom: s(16),
+      borderWidth: 1,
+      borderColor: colors.warningBorder,
+    },
+    title: {
+      fontSize: fs(17),
+      fontWeight: '600',
+      color: colors.warning,
+      marginBottom: s(8),
+    },
+    description: {
+      fontSize: fs(14),
+      color: colors.textSecondary,
+      lineHeight: fs(20),
+      marginBottom: s(16),
+    },
+    options: {
+      gap: s(8),
+    },
+    optionButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: s(12),
+      borderRadius: s(10),
+      alignItems: 'center',
+    },
+    optionPrimary: {
+      color: colors.onPrimary,
+      fontSize: fs(16),
+      fontWeight: '600',
+    },
+    optionButtonSecondary: {
+      backgroundColor: colors.surface,
+      paddingVertical: s(12),
+      borderRadius: s(10),
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    optionSecondary: {
+      color: colors.text,
+      fontSize: fs(15),
+    },
+  });

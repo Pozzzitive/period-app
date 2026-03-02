@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View, Text, Switch } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '@/src/stores';
 import { useSettingsStore } from '@/src/stores';
+import { useTheme } from '@/src/theme';
+import type { ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function TeenagerModeScreen() {
   const profile = useUserStore((s) => s.profile);
   const updateProfile = useUserStore((s) => s.updateProfile);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleToggle = (enabled: boolean) => {
     updateProfile({ isTeenager: enabled });
@@ -19,7 +25,7 @@ export default function TeenagerModeScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.infoBox}>
-        <Text style={styles.infoEmoji}>🌱</Text>
+        <Ionicons name="leaf-outline" size={s(24)} color={colors.success} />
         <Text style={styles.infoText}>
           Teenager mode provides an age-appropriate experience with educational
           content about your cycle.
@@ -34,23 +40,23 @@ export default function TeenagerModeScreen() {
         <Switch
           value={profile.isTeenager}
           onValueChange={handleToggle}
-          trackColor={{ true: '#E74C3C' }}
+          trackColor={{ true: colors.switchActive }}
         />
       </View>
 
       <Text style={styles.sectionTitle}>When enabled:</Text>
       <View style={styles.featureList}>
-        <FeatureItem text="Intercourse logging is hidden" />
-        <FeatureItem text="Fertility/ovulation tracking is hidden" />
-        <FeatureItem text="Focus on period education" />
-        <FeatureItem text="Age-appropriate language" />
-        <FeatureItem text="Premium Plus photo features are disabled" />
+        <FeatureItem text="Intercourse logging is hidden" styles={styles} />
+        <FeatureItem text="Fertility/ovulation tracking is hidden" styles={styles} />
+        <FeatureItem text="Focus on period education" styles={styles} />
+        <FeatureItem text="Age-appropriate language" styles={styles} />
+        <FeatureItem text="Premium Plus photo features are disabled" styles={styles} />
       </View>
     </ScrollView>
   );
 }
 
-function FeatureItem({ text }: { text: string }) {
+function FeatureItem({ text, styles }: { text: string; styles: ReturnType<typeof createStyles> }) {
   return (
     <View style={styles.featureRow}>
       <Text style={styles.featureBullet}>•</Text>
@@ -59,73 +65,70 @@ function FeatureItem({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: s(16),
+    paddingBottom: s(32),
   },
   infoBox: {
-    backgroundColor: '#E8F5E9',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: colors.successLight,
+    padding: s(16),
+    borderRadius: s(12),
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 20,
-  },
-  infoEmoji: {
-    fontSize: 24,
+    gap: s(12),
+    marginBottom: s(20),
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
-    color: '#2E7D32',
-    lineHeight: 20,
+    fontSize: fs(14),
+    color: colors.success,
+    lineHeight: fs(20),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(20),
   },
   rowText: {
     flex: 1,
   },
   rowLabel: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '500',
-    color: '#333',
+    color: colors.text,
   },
   rowDesc: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginTop: s(2),
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: colors.text,
+    marginBottom: s(12),
   },
   featureList: {
-    gap: 8,
+    gap: s(8),
   },
   featureRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: s(8),
   },
   featureBullet: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: fs(14),
+    color: colors.textTertiary,
   },
   featureText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: fs(14),
+    color: colors.textSecondary,
   },
 });

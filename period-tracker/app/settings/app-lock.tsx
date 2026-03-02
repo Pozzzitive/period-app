@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -9,13 +9,19 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, useAuthStore } from '@/src/stores';
+import { useTheme } from '@/src/theme';
+import type { ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function AppLockSettingsScreen() {
   const appLock = useSettingsStore((s) => s.settings.appLock);
   const updateAppLock = useSettingsStore((s) => s.updateAppLock);
   const setPinHash = useAuthStore((s) => s.setPinHash);
   const setBiometricEnabled = useAuthStore((s) => s.setBiometricEnabled);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [pin, setPin] = useState('');
@@ -63,7 +69,7 @@ export default function AppLockSettingsScreen() {
         <Switch
           value={appLock.enabled}
           onValueChange={handleEnableToggle}
-          trackColor={{ true: '#E74C3C' }}
+          trackColor={{ true: colors.switchActive }}
         />
       </View>
 
@@ -73,7 +79,7 @@ export default function AppLockSettingsScreen() {
           <TextInput
             style={styles.pinInput}
             placeholder="Enter PIN (4-6 digits)"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             keyboardType="number-pad"
             secureTextEntry
             value={pin}
@@ -83,7 +89,7 @@ export default function AppLockSettingsScreen() {
           <TextInput
             style={styles.pinInput}
             placeholder="Confirm PIN"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             keyboardType="number-pad"
             secureTextEntry
             value={confirmPin}
@@ -109,7 +115,7 @@ export default function AppLockSettingsScreen() {
                 {minutes} minute{minutes > 1 ? 's' : ''}
               </Text>
               {appLock.timeoutMinutes === minutes && (
-                <Text style={styles.checkmark}>✓</Text>
+                <Ionicons name="checkmark" size={s(18)} color={colors.primary} />
               )}
             </TouchableOpacity>
           ))}
@@ -119,89 +125,84 @@ export default function AppLockSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: s(16),
+    paddingBottom: s(32),
   },
   info: {
-    fontSize: 14,
-    color: '#666',
-    backgroundColor: '#E3F2FD',
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 16,
-    lineHeight: 20,
+    fontSize: fs(14),
+    color: colors.textSecondary,
+    backgroundColor: colors.infoLight,
+    padding: s(14),
+    borderRadius: s(10),
+    marginBottom: s(16),
+    lineHeight: fs(20),
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontWeight: '600',
-    color: '#888',
+    color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 20,
-    marginBottom: 8,
+    letterSpacing: fs(1),
+    marginTop: s(20),
+    marginBottom: s(8),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 6,
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(6),
   },
   rowActive: {
     borderWidth: 1,
-    borderColor: '#E74C3C',
+    borderColor: colors.primary,
   },
   rowText: {
     flex: 1,
   },
   rowLabel: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '500',
-    color: '#333',
+    color: colors.text,
     flex: 1,
   },
-  checkmark: {
-    fontSize: 18,
-    color: '#E74C3C',
-    fontWeight: 'bold',
-  },
   pinSetup: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 12,
-    gap: 12,
+    backgroundColor: colors.surface,
+    padding: s(20),
+    borderRadius: s(12),
+    marginTop: s(12),
+    gap: s(12),
   },
   pinTitle: {
-    fontSize: 17,
+    fontSize: fs(17),
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   pinInput: {
-    backgroundColor: '#F5F5F5',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    fontSize: 18,
+    backgroundColor: colors.surfaceTertiary,
+    paddingVertical: s(14),
+    paddingHorizontal: s(16),
+    borderRadius: s(10),
+    fontSize: fs(18),
     textAlign: 'center',
-    letterSpacing: 8,
+    letterSpacing: fs(8),
   },
   button: {
-    backgroundColor: '#E74C3C',
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: colors.primary,
+    paddingVertical: s(14),
+    borderRadius: s(10),
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: colors.onPrimary,
+    fontSize: fs(16),
     fontWeight: '600',
   },
 });

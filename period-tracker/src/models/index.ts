@@ -1,4 +1,5 @@
 import type { CyclePhase } from '../constants/phases';
+import type { ThemeId } from '../theme/types';
 
 // ============================================================
 // Core Data Types
@@ -31,9 +32,11 @@ export interface SymptomEntry {
 
 /** Intercourse log entry */
 export interface IntercourseEntry {
-  logged: boolean;
+  id: string;
   protected?: boolean;
   notes?: string;
+  photos?: string[];   // local file URIs
+  createdAt: string;    // ISO timestamp
 }
 
 /** Daily log for a specific date */
@@ -42,7 +45,7 @@ export interface DailyLog {
   flow?: FlowIntensity;
   symptoms: SymptomEntry[];
   moods: string[]; // mood IDs
-  intercourse?: IntercourseEntry;
+  intercourse?: IntercourseEntry[];
   notes?: string;
   updatedAt: string; // ISO datetime
 }
@@ -75,6 +78,12 @@ export interface PhaseInfo {
 }
 
 // ============================================================
+// Fertility Intent
+// ============================================================
+
+export type FertilityIntent = 'conceive' | 'avoid' | 'none';
+
+// ============================================================
 // User Profile & Settings
 // ============================================================
 
@@ -97,6 +106,7 @@ export interface NotificationSettings {
   fertileWindowOpen: boolean;   // 5 days before ovulation
   peakFertility: boolean;       // ovulation day
   lowFertility: boolean;        // late luteal
+  fertilityIntent: FertilityIntent; // how to frame fertility notifications
   dailyLogReminder: boolean;    // configurable time
   dailyLogReminderTime?: string; // HH:mm
   cycleSummary: boolean;        // day after period ends
@@ -117,6 +127,7 @@ export interface AppSettings {
   fertilityTrackingEnabled: boolean;
   partnerSharingEnabled: boolean;
   theme: 'light' | 'dark' | 'system';
+  colorTheme: ThemeId;
   gdprConsentGiven: boolean;
   gdprConsentDate?: string;
   dataCategories: {

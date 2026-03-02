@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,18 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, useUserStore } from '@/src/stores';
+import { useTheme, type ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function ConsentScreen() {
   const router = useRouter();
   const setGdprConsent = useSettingsStore((s) => s.setGdprConsent);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const completeOnboarding = useUserStore((s) => s.completeOnboarding);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [cycleData, setCycleData] = useState(true);
   const [symptoms, setSymptoms] = useState(true);
@@ -68,7 +73,7 @@ export default function ConsentScreen() {
           <Switch
             value={cycleData}
             onValueChange={setCycleData}
-            trackColor={{ true: '#E74C3C' }}
+            trackColor={{ true: colors.switchActive }}
           />
         </View>
 
@@ -80,7 +85,7 @@ export default function ConsentScreen() {
           <Switch
             value={symptoms}
             onValueChange={setSymptoms}
-            trackColor={{ true: '#E74C3C' }}
+            trackColor={{ true: colors.switchActive }}
           />
         </View>
 
@@ -92,7 +97,7 @@ export default function ConsentScreen() {
           <Switch
             value={intercourse}
             onValueChange={setIntercourse}
-            trackColor={{ true: '#E74C3C' }}
+            trackColor={{ true: colors.switchActive }}
           />
         </View>
 
@@ -102,7 +107,7 @@ export default function ConsentScreen() {
           activeOpacity={0.7}
         >
           <View style={[styles.checkbox, understood && styles.checkboxChecked]}>
-            {understood && <Text style={styles.checkmark}>✓</Text>}
+            {understood && <Ionicons name="checkmark" size={s(16)} color={colors.onPrimary} />}
           </View>
           <Text style={styles.consentText}>
             I understand that my health data is stored locally on my device and
@@ -123,125 +128,120 @@ export default function ConsentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
-    padding: 24,
+    backgroundColor: colors.background,
+    padding: s(24),
   },
   content: {
-    paddingTop: 40,
-    paddingBottom: 24,
+    paddingTop: s(40),
+    paddingBottom: s(24),
   },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: s(8),
   },
   subtitle: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 24,
+    fontSize: fs(15),
+    color: colors.textSecondary,
+    marginBottom: s(24),
   },
   infoBox: {
-    backgroundColor: '#E3F2FD',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
+    backgroundColor: colors.infoLight,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(24),
   },
   infoTitle: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
-    color: '#1565C0',
-    marginBottom: 8,
+    color: colors.info,
+    marginBottom: s(8),
   },
   infoText: {
-    fontSize: 14,
-    color: '#1565C0',
-    lineHeight: 20,
+    fontSize: fs(14),
+    color: colors.info,
+    lineHeight: fs(20),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: fs(18),
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: colors.text,
+    marginBottom: s(4),
   },
   sectionDesc: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 16,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginBottom: s(16),
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(8),
   },
   rowText: {
     flex: 1,
-    marginRight: 12,
+    marginRight: s(12),
   },
   rowLabel: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   rowDesc: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginTop: s(2),
   },
   consentRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#FFF8E1',
-    borderRadius: 12,
+    gap: s(12),
+    marginTop: s(20),
+    padding: s(16),
+    backgroundColor: colors.warningLight,
+    borderRadius: s(12),
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: s(24),
+    height: s(24),
+    borderRadius: s(6),
     borderWidth: 2,
-    borderColor: '#CCC',
+    borderColor: colors.textDisabled,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 2,
   },
   checkboxChecked: {
-    backgroundColor: '#E74C3C',
-    borderColor: '#E74C3C',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   consentText: {
     flex: 1,
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
+    fontSize: fs(14),
+    color: colors.text,
+    lineHeight: fs(20),
   },
   button: {
-    backgroundColor: '#E74C3C',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: s(16),
+    borderRadius: s(12),
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: s(16),
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: colors.onPrimary,
+    fontSize: fs(18),
     fontWeight: '600',
   },
 });

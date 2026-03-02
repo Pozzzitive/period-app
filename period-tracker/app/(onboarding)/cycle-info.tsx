@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,11 +20,15 @@ import {
   MIN_PERIOD_LENGTH,
   MAX_PERIOD_LENGTH,
 } from '@/src/constants/phases';
+import { useTheme, type ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function CycleInfoScreen() {
   const router = useRouter();
   const updateProfile = useUserStore((s) => s.updateProfile);
   const addPeriod = useCycleStore((s) => s.addPeriod);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [cycleLength, setCycleLength] = useState(DEFAULT_CYCLE_LENGTH);
   const [periodLength, setPeriodLength] = useState(DEFAULT_PERIOD_LENGTH);
@@ -103,25 +107,41 @@ export default function CycleInfoScreen() {
         {/* Last Period Date */}
         <View style={styles.section}>
           <Text style={styles.label}>When did your last period start?</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={styles.dateText}>
-              {format(lastPeriodDate, 'MMMM d, yyyy')}
-            </Text>
-          </TouchableOpacity>
-          {(showDatePicker || Platform.OS === 'ios') && (
+          {Platform.OS === 'ios' ? (
             <DateTimePicker
               value={lastPeriodDate}
               mode="date"
+              display="inline"
               maximumDate={new Date()}
               onChange={(_, date) => {
-                setShowDatePicker(false);
                 if (date) setLastPeriodDate(date);
               }}
-              style={styles.datePicker}
+              style={styles.datePickerInline}
+              accentColor={colors.primary}
             />
+          ) : (
+            <>
+              <Text style={styles.dateSelected}>
+                {format(lastPeriodDate, 'MMMM d, yyyy')}
+              </Text>
+              <TouchableOpacity
+                style={styles.dateChangeBtn}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.dateChangeBtnText}>Change date</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={lastPeriodDate}
+                  mode="date"
+                  maximumDate={new Date()}
+                  onChange={(_, date) => {
+                    setShowDatePicker(false);
+                    if (date) setLastPeriodDate(date);
+                  }}
+                />
+              )}
+            </>
           )}
         </View>
       </ScrollView>
@@ -133,93 +153,98 @@ export default function CycleInfoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
-    padding: 24,
+    backgroundColor: colors.background,
+    padding: s(24),
   },
   content: {
-    paddingTop: 40,
-    paddingBottom: 24,
+    paddingTop: s(40),
+    paddingBottom: s(24),
   },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: s(8),
   },
   subtitle: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 32,
+    fontSize: fs(15),
+    color: colors.textSecondary,
+    marginBottom: s(32),
   },
   section: {
-    marginBottom: 28,
+    marginBottom: s(28),
   },
   label: {
-    fontSize: 17,
+    fontSize: fs(17),
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: colors.text,
+    marginBottom: s(4),
   },
   hint: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 12,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginBottom: s(12),
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
+    gap: s(20),
   },
   stepperBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E74C3C',
+    width: s(44),
+    height: s(44),
+    borderRadius: s(22),
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepperBtnText: {
-    color: '#fff',
-    fontSize: 22,
+    color: colors.onPrimary,
+    fontSize: fs(22),
     fontWeight: 'bold',
   },
   stepperValue: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: '600',
-    color: '#333',
-    minWidth: 90,
+    color: colors.text,
+    minWidth: s(90),
     textAlign: 'center',
   },
-  dateButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
+  dateSelected: {
+    fontSize: fs(20),
+    fontWeight: '600',
+    color: colors.text,
     textAlign: 'center',
+    marginBottom: s(8),
   },
-  datePicker: {
-    marginTop: 8,
+  dateChangeBtn: {
+    alignSelf: 'center',
+    paddingVertical: s(8),
+    paddingHorizontal: s(16),
+  },
+  dateChangeBtnText: {
+    fontSize: fs(15),
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  datePickerInline: {
+    marginTop: s(8),
+    alignSelf: 'center',
   },
   button: {
-    backgroundColor: '#E74C3C',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: s(16),
+    borderRadius: s(12),
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: s(16),
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: colors.onPrimary,
+    fontSize: fs(18),
     fontWeight: '600',
   },
 });
