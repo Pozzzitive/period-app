@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "WebSearch",
+      "Bash(npx create-expo-app@latest:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "Bash(npx expo prebuild:*)",
+      "Bash(pod install)",
+      "Bash(npx expo run:ios:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs:*)",
+      "Bash(npx expo start:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx react-native config:*)",
+      "Bash(python3:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:www.figma.com)",
+      "WebFetch(domain:www.schemecolor.com)",
+      "WebFetch(domain:colormagic.app)"
+    ]
+  }
+}
