@@ -1,7 +1,6 @@
 import * as Notifications from 'expo-notifications';
-import { addDays, parseISO, setHours, setMinutes } from 'date-fns';
-import type { PredictionResult } from '../models';
-import type { NotificationSettings } from '../models';
+import { addDays, parseISO } from 'date-fns';
+import type { PredictionResult, NotificationSettings, FertilityIntent } from '../models';
 
 // Notification category identifiers
 const NOTIF_IDS = {
@@ -92,29 +91,40 @@ export async function scheduleNotifications(
     }
   }
 
-  // Fertile window (skip for teenagers)
-  if (!isTeenager && settings.fertileWindowOpen && prediction.fertileWindowStart) {
-    const fertileDate = parseISO(prediction.fertileWindowStart);
-    if (fertileDate > now) {
-      await scheduleNotification(
-        NOTIF_IDS.FERTILE_WINDOW,
-        'Fertile Window',
-        "Your fertile window begins today. You're approaching your most fertile days.",
-        fertileDate
-      );
-    }
-  }
+  // Fertility notifications (skip for teenagers and 'none' intent)
+  const intent: FertilityIntent = settings.fertilityIntent ?? 'none';
 
-  // Peak fertility (skip for teenagers)
-  if (!isTeenager && settings.peakFertility && prediction.ovulationDate) {
-    const ovulationDate = parseISO(prediction.ovulationDate);
-    if (ovulationDate > now) {
-      await scheduleNotification(
-        NOTIF_IDS.PEAK_FERTILITY,
-        'Peak Fertility',
-        "Today is your estimated ovulation day — your most fertile day of the cycle.",
-        ovulationDate
-      );
+  if (!isTeenager && intent !== 'none') {
+    // Fertile window
+    if (settings.fertileWindowOpen && prediction.fertileWindowStart) {
+      const fertileDate = parseISO(prediction.fertileWindowStart);
+      if (fertileDate > now) {
+        const body = intent === 'conceive'
+          ? 'Your fertile window begins today — this is a great time to try!'
+          : 'Your fertile window begins today — be extra careful if you want to avoid pregnancy.';
+        await scheduleNotification(
+          NOTIF_IDS.FERTILE_WINDOW,
+          'Fertile Window',
+          body,
+          fertileDate
+        );
+      }
+    }
+
+    // Peak fertility
+    if (settings.peakFertility && prediction.ovulationDate) {
+      const ovulationDate = parseISO(prediction.ovulationDate);
+      if (ovulationDate > now) {
+        const body = intent === 'conceive'
+          ? 'Today is your estimated ovulation day — your best chance to conceive!'
+          : 'Today is your estimated ovulation day — highest risk of pregnancy. Use protection if needed.';
+        await scheduleNotification(
+          NOTIF_IDS.PEAK_FERTILITY,
+          'Peak Fertility',
+          body,
+          ovulationDate
+        );
+      }
     }
   }
 

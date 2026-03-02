@@ -2,11 +2,13 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { StatusBar } from 'react-native';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { AppThemeProvider, useTheme } from '@/src/theme';
 import { useUserStore } from '@/src/stores';
+import { useNotificationScheduler } from '@/src/hooks';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -35,14 +37,34 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <AppThemeProvider>
+      <RootLayoutNav />
+    </AppThemeProvider>
+  );
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { colors, isDark } = useTheme();
   const onboardingCompleted = useUserStore((s) => s.profile.onboardingCompleted);
+  useNotificationScheduler();
   const router = useRouter();
   const segments = useSegments();
+
+  const navigationTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.text,
+        border: colors.border,
+      },
+    };
+  }, [isDark, colors]);
 
   useEffect(() => {
     const inOnboarding = segments[0] === '(onboarding)';
@@ -55,18 +77,19 @@ function RootLayoutNav() {
   }, [onboardingCompleted, segments]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navigationTheme}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Stack>
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="day/[date]" options={{ title: 'Day Details', presentation: 'card' }} />
-        <Stack.Screen name="settings/notifications" options={{ title: 'Notifications' }} />
-        <Stack.Screen name="settings/app-lock" options={{ title: 'App Lock' }} />
-        <Stack.Screen name="settings/health-conditions" options={{ title: 'Health Conditions' }} />
-        <Stack.Screen name="settings/privacy" options={{ title: 'Privacy Policy' }} />
-        <Stack.Screen name="settings/data-management" options={{ title: 'Data Management' }} />
-        <Stack.Screen name="settings/teenager-mode" options={{ title: 'Teenager Mode' }} />
-        <Stack.Screen name="subscription/paywall" options={{ title: 'Premium Plus', presentation: 'modal' }} />
+        <Stack.Screen name="day/[date]" options={{ title: 'Day Details', presentation: 'card', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="settings/notifications" options={{ title: 'Notifications', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="settings/app-lock" options={{ title: 'App Lock', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="settings/health-conditions" options={{ title: 'Health Conditions', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="settings/privacy" options={{ title: 'Privacy Policy', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="settings/data-management" options={{ title: 'Data Management', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="settings/teenager-mode" options={{ title: 'Teenager Mode', headerBackTitle: 'Back' }} />
+<Stack.Screen name="subscription/paywall" options={{ title: 'Premium Plus', presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );

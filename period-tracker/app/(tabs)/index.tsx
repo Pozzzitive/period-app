@@ -4,13 +4,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, addMonths, subMonths, differenceInDays, parseISO, subDays } from 'date-fns';
+import { s, fs } from '@/src/utils/scale';
 import { useMissingPeriod, useCyclePhase } from '@/src/hooks';
 import { useMultiplePredictions } from '@/src/hooks/useMultiplePredictions';
 import { MissingPeriodPrompt } from '@/src/components/common/MissingPeriodPrompt';
 import { CycleRing } from '@/src/components/home/CycleRing';
 import { CalendarGrid } from '@/src/components/calendar/CalendarGrid';
 import { DaySummarySheet } from '@/src/components/calendar/DaySummarySheet';
-import { useCycleStore, useUserStore } from '@/src/stores';
+import { useCycleStore, useUserStore, useSettingsStore } from '@/src/stores';
 import { todayString, formatDate } from '@/src/utils/dates';
 import { useTheme } from '@/src/theme';
 import type { ThemeColors } from '@/src/theme';
@@ -29,6 +30,8 @@ export default function TodayScreen() {
   const endPeriod = useCycleStore((s) => s.endPeriod);
   const deletePeriod = useCycleStore((s) => s.deletePeriod);
   const profile = useUserStore((s) => s.profile);
+  const fertilityEnabled = useSettingsStore((s) => s.settings.fertilityTrackingEnabled);
+  const showFertility = fertilityEnabled && !profile.isTeenager;
   const typicalPeriodLength = profile.typicalPeriodLength;
   const typicalCycleLength = profile.typicalCycleLength;
 
@@ -180,6 +183,12 @@ export default function TodayScreen() {
         {predictionCount > 0 && (
           <PredictedLegendItem color={colors.phases.menstruation.color} />
         )}
+        {showFertility && (
+          <>
+            <LegendItem color={colors.success} label="Peak fertility" />
+            <LegendItem color={colors.successLight} label="Fertile" />
+          </>
+        )}
       </View>
 
       {/* Prediction controls */}
@@ -268,7 +277,7 @@ export default function TodayScreen() {
                     <TouchableOpacity
                       style={styles.deleteBtn}
                       onPress={() => handleDeletePeriod(period)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      hitSlop={{ top: s(8), bottom: s(8), left: s(8), right: s(8) }}
                     >
                       <Text style={styles.deleteBtnText}>Delete</Text>
                     </TouchableOpacity>
@@ -376,15 +385,15 @@ const legendStyles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: s(5),
   },
   legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: s(10),
+    height: s(10),
+    borderRadius: s(5),
   },
   legendText: {
-    fontSize: 11,
+    fontSize: fs(11),
     fontWeight: '500',
   },
 });
@@ -396,69 +405,70 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.background,
     },
     content: {
-      padding: 16,
-      paddingBottom: 32,
+      paddingHorizontal: s(16),
+      paddingTop: s(4),
+      paddingBottom: s(32),
     },
     calendarNav: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 12,
+      marginBottom: s(12),
     },
     navButton: {
-      padding: 12,
-      minWidth: 44,
-      minHeight: 44,
+      padding: s(12),
+      minWidth: Math.max(44, s(44)),
+      minHeight: Math.max(44, s(44)),
       justifyContent: 'center',
       alignItems: 'center',
     },
     navText: {
-      fontSize: 28,
+      fontSize: fs(28),
       color: colors.primary,
       fontWeight: '300',
-      lineHeight: 32,
+      lineHeight: fs(32),
     },
     navTitle: {
-      fontSize: 18,
+      fontSize: fs(18),
       fontWeight: '700',
       color: colors.text,
-      letterSpacing: 0.3,
+      letterSpacing: fs(0.3),
     },
     legend: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 14,
-      marginBottom: 14,
+      gap: s(14),
+      marginBottom: s(14),
       justifyContent: 'center',
     },
     stepperRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 8,
-      paddingHorizontal: 4,
+      marginBottom: s(8),
+      paddingHorizontal: s(4),
     },
     toggleRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 12,
-      paddingHorizontal: 4,
+      marginBottom: s(12),
+      paddingHorizontal: s(4),
     },
     stepperLabel: {
-      fontSize: 14,
+      fontSize: fs(14),
       fontWeight: '500',
       color: colors.textSecondary,
     },
     stepperControls: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: s(12),
     },
     stepperButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: s(32),
+      height: s(32),
+      borderRadius: s(16),
       backgroundColor: colors.surfaceTertiary,
       justifyContent: 'center',
       alignItems: 'center',
@@ -467,19 +477,19 @@ const createStyles = (colors: ThemeColors) =>
       opacity: 0.35,
     },
     stepperButtonText: {
-      fontSize: 18,
+      fontSize: fs(18),
       fontWeight: '600',
       color: colors.primary,
-      lineHeight: 20,
+      lineHeight: fs(20),
     },
     stepperButtonTextDisabled: {
       color: colors.textDisabled,
     },
     stepperValue: {
-      fontSize: 15,
+      fontSize: fs(15),
       fontWeight: '600',
       color: colors.text,
-      minWidth: 16,
+      minWidth: s(16),
       textAlign: 'center',
     },
     historyBackdrop: {
@@ -487,35 +497,35 @@ const createStyles = (colors: ThemeColors) =>
     },
     historySheet: {
       backgroundColor: colors.sheetBackground,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      padding: 24,
-      paddingBottom: 40,
+      borderTopLeftRadius: s(20),
+      borderTopRightRadius: s(20),
+      padding: s(24),
+      paddingBottom: s(40),
       maxHeight: '70%',
     },
     historyHandle: {
-      width: 36,
-      height: 4,
+      width: s(36),
+      height: s(4),
       borderRadius: 2,
       backgroundColor: colors.surfaceTertiary,
       alignSelf: 'center',
-      marginBottom: 16,
+      marginBottom: s(16),
     },
     historySheetTitle: {
-      fontSize: 20,
+      fontSize: fs(20),
       fontWeight: '700',
       color: colors.text,
       textAlign: 'center',
-      marginBottom: 16,
+      marginBottom: s(16),
     },
     historyList: {
-      marginBottom: 16,
+      marginBottom: s(16),
     },
     historyRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 10,
+      paddingVertical: s(10),
       borderTopWidth: 1,
       borderTopColor: colors.borderLight,
     },
@@ -523,40 +533,40 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
     },
     historyDates: {
-      fontSize: 14,
+      fontSize: fs(14),
       fontWeight: '500',
       color: colors.text,
     },
     historyMeta: {
-      fontSize: 12,
+      fontSize: fs(12),
       color: colors.textTertiary,
-      marginTop: 2,
+      marginTop: s(2),
     },
     deleteBtn: {
-      paddingVertical: 6,
-      paddingHorizontal: 12,
+      paddingVertical: s(6),
+      paddingHorizontal: s(12),
     },
     deleteBtnText: {
-      fontSize: 13,
+      fontSize: fs(13),
       color: colors.destructive,
       fontWeight: '500',
     },
     historyCloseBtn: {
       backgroundColor: colors.surfaceSecondary,
-      paddingVertical: 14,
-      borderRadius: 12,
+      paddingVertical: s(14),
+      borderRadius: s(12),
       alignItems: 'center',
     },
     historyCloseText: {
-      fontSize: 16,
+      fontSize: fs(16),
       fontWeight: '600',
       color: colors.text,
     },
     dateText: {
       textAlign: 'center',
-      fontSize: 14,
+      fontSize: fs(14),
       color: colors.textMuted,
-      marginTop: 8,
+      marginTop: s(8),
     },
     modalOverlay: {
       flex: 1,
@@ -565,53 +575,53 @@ const createStyles = (colors: ThemeColors) =>
     },
     modalSheet: {
       backgroundColor: colors.sheetBackground,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      padding: 24,
-      paddingBottom: 40,
+      borderTopLeftRadius: s(20),
+      borderTopRightRadius: s(20),
+      padding: s(24),
+      paddingBottom: s(40),
     },
     modalTitle: {
-      fontSize: 20,
+      fontSize: fs(20),
       fontWeight: '700',
       color: colors.text,
       textAlign: 'center',
     },
     modalSubtitle: {
-      fontSize: 14,
+      fontSize: fs(14),
       color: colors.textSecondary,
       textAlign: 'center',
-      marginTop: 4,
-      marginBottom: 16,
+      marginTop: s(4),
+      marginBottom: s(16),
     },
     datePickerInline: {
       alignItems: 'center',
-      marginBottom: 16,
+      marginBottom: s(16),
     },
     modalButtons: {
       flexDirection: 'row',
-      gap: 12,
+      gap: s(12),
     },
     modalCancelBtn: {
       flex: 1,
       backgroundColor: colors.surfaceSecondary,
-      paddingVertical: 14,
-      borderRadius: 12,
+      paddingVertical: s(14),
+      borderRadius: s(12),
       alignItems: 'center',
     },
     modalCancelText: {
-      fontSize: 16,
+      fontSize: fs(16),
       fontWeight: '600',
       color: colors.text,
     },
     modalConfirmBtn: {
       flex: 1,
       backgroundColor: colors.primary,
-      paddingVertical: 14,
-      borderRadius: 12,
+      paddingVertical: s(14),
+      borderRadius: s(12),
       alignItems: 'center',
     },
     modalConfirmText: {
-      fontSize: 16,
+      fontSize: fs(16),
       fontWeight: '600',
       color: colors.onPrimary,
     },

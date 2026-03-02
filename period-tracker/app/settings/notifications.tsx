@@ -1,11 +1,35 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View, Text, Switch } from 'react-native';
+import React, { useMemo } from 'react';
+import { ScrollView, StyleSheet, View, Text, Switch, TouchableOpacity } from 'react-native';
 import { useSettingsStore } from '@/src/stores';
 import { TeenagerGate } from '@/src/components/common/TeenagerGate';
+import { useTheme } from '@/src/theme';
+import type { ThemeColors } from '@/src/theme';
+import type { FertilityIntent } from '@/src/models';
+import { s, fs } from '@/src/utils/scale';
+
+const INTENT_OPTIONS: { value: FertilityIntent; label: string; desc: string }[] = [
+  { value: 'none', label: 'Not tracking', desc: 'No fertility notifications' },
+  { value: 'conceive', label: 'Trying to conceive', desc: 'Encouraging reminders about fertile window and peak days' },
+  { value: 'avoid', label: 'Avoiding pregnancy', desc: 'Cautionary reminders when fertile window opens' },
+];
 
 export default function NotificationsSettingsScreen() {
   const notifications = useSettingsStore((s) => s.settings.notifications);
   const updateNotifications = useSettingsStore((s) => s.updateNotifications);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const currentIntent = notifications.fertilityIntent ?? 'none';
+
+  const handleIntentChange = (intent: FertilityIntent) => {
+    const fertilityOn = intent !== 'none';
+    updateNotifications({
+      fertilityIntent: intent,
+      fertileWindowOpen: fertilityOn,
+      peakFertility: fertilityOn,
+      lowFertility: fertilityOn,
+    });
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -19,45 +43,41 @@ export default function NotificationsSettingsScreen() {
         desc="5 days before predicted start"
         value={notifications.periodReminder}
         onChange={(val) => updateNotifications({ periodReminder: val })}
+        colors={colors}
+        styles={styles}
       />
       <NotifRow
         label="Period starting"
         desc="On predicted start day"
         value={notifications.periodStarting}
         onChange={(val) => updateNotifications({ periodStarting: val })}
+        colors={colors}
+        styles={styles}
       />
       <NotifRow
         label="Premenstrual phase"
         desc="When you enter PMS window"
         value={notifications.premenstrualPhase}
         onChange={(val) => updateNotifications({ premenstrualPhase: val })}
+        colors={colors}
+        styles={styles}
       />
       <NotifRow
         label="Cycle summary"
         desc="Summary after period ends"
         value={notifications.cycleSummary}
         onChange={(val) => updateNotifications({ cycleSummary: val })}
+        colors={colors}
+        styles={styles}
       />
 
       <TeenagerGate>
         <Text style={styles.sectionTitle}>Fertility</Text>
-        <NotifRow
-          label="Fertile window"
-          desc="5 days before ovulation"
-          value={notifications.fertileWindowOpen}
-          onChange={(val) => updateNotifications({ fertileWindowOpen: val })}
-        />
-        <NotifRow
-          label="Peak fertility"
-          desc="Estimated ovulation day"
-          value={notifications.peakFertility}
-          onChange={(val) => updateNotifications({ peakFertility: val })}
-        />
-        <NotifRow
-          label="Low fertility"
-          desc="Late luteal phase"
-          value={notifications.lowFertility}
-          onChange={(val) => updateNotifications({ lowFertility: val })}
+        <FertilityIntentChooser
+          selected={currentIntent}
+          onSelect={handleIntentChange}
+          colors={colors}
+          styles={styles}
         />
       </TeenagerGate>
 
@@ -67,6 +87,8 @@ export default function NotificationsSettingsScreen() {
         desc="Remind to log symptoms"
         value={notifications.dailyLogReminder}
         onChange={(val) => updateNotifications({ dailyLogReminder: val })}
+        colors={colors}
+        styles={styles}
       />
 
       <Text style={styles.sectionTitle}>Medication</Text>
@@ -75,14 +97,56 @@ export default function NotificationsSettingsScreen() {
         desc="Daily medication reminder"
         value={notifications.pillReminder}
         onChange={(val) => updateNotifications({ pillReminder: val })}
+        colors={colors}
+        styles={styles}
       />
       <NotifRow
         label="Contraception reminder"
         desc="Patch, ring, or injection"
         value={notifications.contraceptionReminder}
         onChange={(val) => updateNotifications({ contraceptionReminder: val })}
+        colors={colors}
+        styles={styles}
       />
     </ScrollView>
+  );
+}
+
+function FertilityIntentChooser({
+  selected,
+  onSelect,
+  colors,
+  styles,
+}: {
+  selected: FertilityIntent;
+  onSelect: (intent: FertilityIntent) => void;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  return (
+    <View>
+      {INTENT_OPTIONS.map((option) => {
+        const isSelected = selected === option.value;
+        return (
+          <TouchableOpacity
+            key={option.value}
+            style={[styles.intentRow, isSelected && styles.intentRowSelected]}
+            onPress={() => onSelect(option.value)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.intentRadio}>
+              {isSelected && <View style={styles.intentRadioInner} />}
+            </View>
+            <View style={styles.intentText}>
+              <Text style={[styles.intentLabel, isSelected && styles.intentLabelSelected]}>
+                {option.label}
+              </Text>
+              <Text style={styles.intentDesc}>{option.desc}</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
   );
 }
 
@@ -91,11 +155,15 @@ function NotifRow({
   desc,
   value,
   onChange,
+  colors,
+  styles,
 }: {
   label: string;
   desc: string;
   value: boolean;
   onChange: (val: boolean) => void;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
 }) {
   return (
     <View style={styles.row}>
@@ -103,57 +171,104 @@ function NotifRow({
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowDesc}>{desc}</Text>
       </View>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: '#E74C3C' }} />
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.switchActive }} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: s(16),
+    paddingBottom: s(32),
   },
   info: {
-    fontSize: 14,
-    color: '#666',
-    backgroundColor: '#E3F2FD',
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 16,
+    fontSize: fs(14),
+    color: colors.textSecondary,
+    backgroundColor: colors.infoLight,
+    padding: s(14),
+    borderRadius: s(10),
+    marginBottom: s(16),
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontWeight: '600',
-    color: '#888',
+    color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 16,
-    marginBottom: 8,
+    letterSpacing: fs(1),
+    marginTop: s(16),
+    marginBottom: s(8),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 6,
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(6),
   },
   rowText: {
     flex: 1,
-    marginRight: 12,
+    marginRight: s(12),
   },
   rowLabel: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '500',
-    color: '#333',
+    color: colors.text,
   },
   rowDesc: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginTop: s(2),
+  },
+  intentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(6),
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  intentRowSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.selectedBackground,
+  },
+  intentRadio: {
+    width: s(22),
+    height: s(22),
+    borderRadius: s(11),
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: s(14),
+  },
+  intentRadioInner: {
+    width: s(12),
+    height: s(12),
+    borderRadius: s(6),
+    backgroundColor: colors.primary,
+  },
+  intentText: {
+    flex: 1,
+  },
+  intentLabel: {
+    fontSize: fs(16),
+    fontWeight: '500',
+    color: colors.text,
+  },
+  intentLabelSelected: {
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  intentDesc: {
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginTop: s(2),
   },
 });

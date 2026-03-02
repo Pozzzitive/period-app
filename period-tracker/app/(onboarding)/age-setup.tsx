@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,17 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '@/src/stores';
+import { useTheme, type ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function AgeSetupScreen() {
   const router = useRouter();
   const updateProfile = useUserStore((s) => s.updateProfile);
   const [birthYear, setBirthYear] = useState('');
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const currentYear = new Date().getFullYear();
   const age = birthYear ? currentYear - parseInt(birthYear, 10) : null;
@@ -44,7 +49,7 @@ export default function AgeSetupScreen() {
             style={styles.input}
             keyboardType="number-pad"
             placeholder="e.g. 2005"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             value={birthYear}
             onChangeText={(text) => setBirthYear(text.replace(/[^0-9]/g, '').slice(0, 4))}
             maxLength={4}
@@ -53,7 +58,7 @@ export default function AgeSetupScreen() {
 
         {isTeenager && (
           <View style={styles.infoBox}>
-            <Text style={styles.infoEmoji}>🌱</Text>
+            <Ionicons name="leaf-outline" size={s(24)} color={colors.success} />
             <Text style={styles.infoText}>
               We'll enable teenager mode with age-appropriate content. Some features
               like intercourse logging and fertility tracking will be hidden.
@@ -84,99 +89,96 @@ export default function AgeSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
-    padding: 24,
+    backgroundColor: colors.background,
+    padding: s(24),
   },
   content: {
     flex: 1,
-    paddingTop: 40,
+    paddingTop: s(40),
   },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: s(8),
   },
   subtitle: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 32,
+    fontSize: fs(15),
+    color: colors.textSecondary,
+    marginBottom: s(32),
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: s(20),
   },
   label: {
-    fontSize: 17,
+    fontSize: fs(17),
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: s(8),
   },
   input: {
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    backgroundColor: colors.surface,
+    paddingVertical: s(14),
+    paddingHorizontal: s(16),
+    borderRadius: s(10),
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    fontSize: 18,
+    borderColor: colors.border,
+    fontSize: fs(18),
     textAlign: 'center',
   },
   infoBox: {
-    backgroundColor: '#E8F5E9',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: colors.successLight,
+    padding: s(16),
+    borderRadius: s(12),
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-  },
-  infoEmoji: {
-    fontSize: 24,
+    gap: s(12),
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
-    color: '#2E7D32',
-    lineHeight: 20,
+    fontSize: fs(14),
+    color: colors.success,
+    lineHeight: fs(20),
   },
   errorText: {
-    color: '#E74C3C',
-    fontSize: 14,
-    marginTop: 8,
+    color: colors.primary,
+    fontSize: fs(14),
+    marginTop: s(8),
   },
   buttons: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: s(12),
+    marginBottom: s(16),
   },
   skipButton: {
     flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: s(16),
+    borderRadius: s(12),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E74C3C',
+    borderColor: colors.primary,
   },
   skipText: {
-    color: '#E74C3C',
-    fontSize: 18,
+    color: colors.primary,
+    fontSize: fs(18),
     fontWeight: '600',
   },
   button: {
     flex: 2,
-    backgroundColor: '#E74C3C',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: s(16),
+    borderRadius: s(12),
     alignItems: 'center',
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: colors.onPrimary,
+    fontSize: fs(18),
     fontWeight: '600',
   },
 });

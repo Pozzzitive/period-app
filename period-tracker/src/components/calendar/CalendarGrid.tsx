@@ -6,6 +6,7 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
+  differenceInDays,
   format,
   isSameMonth,
   isSameDay,
@@ -13,26 +14,33 @@ import {
   addDays,
   isWithinInterval,
 } from 'date-fns';
+import { s, fs } from '@/src/utils/scale';
 import { useCycleStore, useUserStore, useSettingsStore } from '../../stores';
-import { calculatePhase } from '../../engine';
+import { calculatePhase, getCyclePhaseRanges } from '../../engine';
 import { calculateFertilityWindow } from '../../engine';
-import { PHASES } from '../../constants/phases';
+import type { PredictedPeriod } from '../../engine';
 import type { CyclePhase } from '../../constants/phases';
+import { useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme';
 
 interface CalendarGridProps {
   month: Date;
   onSelectDay: (date: string) => void;
   selectedDate?: string;
+  predictedPeriods?: PredictedPeriod[];
+  showPredictedPhases?: boolean;
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function CalendarGrid({ month, onSelectDay, selectedDate }: CalendarGridProps) {
+export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriods, showPredictedPhases }: CalendarGridProps) {
+  const { colors } = useTheme();
   const periods = useCycleStore((s) => s.periods);
   const cycles = useCycleStore((s) => s.cycles);
   const profile = useUserStore((s) => s.profile);
   const fertilityEnabled = useSettingsStore((s) => s.settings.fertilityTrackingEnabled);
 
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const today = new Date();
 
   const calendarDays = useMemo(() => {
@@ -83,12 +91,57 @@ export function CalendarGrid({ month, onSelectDay, selectedDate }: CalendarGridP
     return map;
   }, [cycles, profile.typicalCycleLength, profile.isTeenager, fertilityEnabled]);
 
+  // Build predicted period dates set
+  const predictedPeriodDates = useMemo(() => {
+    const dates = new Set<string>();
+    if (!predictedPeriods) return dates;
+    for (const pp of predictedPeriods) {
+      const start = parseISO(pp.startDate);
+      const end = parseISO(pp.endDate);
+      const days = eachDayOfInterval({ start, end });
+      for (const day of days) {
+        dates.add(format(day, 'yyyy-MM-dd'));
+      }
+    }
+    return dates;
+  }, [predictedPeriods]);
+
+  // Build predicted phase dates for full cycle coloring
+  const predictedPhaseDates = useMemo(() => {
+    const map = new Map<string, CyclePhase>();
+    if (!showPredictedPhases || !predictedPeriods || predictedPeriods.length === 0) return map;
+
+    for (const pp of predictedPeriods) {
+      const ranges = getCyclePhaseRanges(pp.startDate, pp.cycleLength, pp.periodLength);
+      const cycleStart = parseISO(pp.startDate);
+      for (const range of ranges) {
+        const start = addDays(cycleStart, range.startDay - 1);
+        const end = addDays(cycleStart, range.endDay - 1);
+        const days = eachDayOfInterval({ start, end });
+        for (const day of days) {
+          map.set(format(day, 'yyyy-MM-dd'), range.phase);
+        }
+      }
+    }
+    return map;
+  }, [predictedPeriods, showPredictedPhases]);
+
   const getPhaseForDate = (dateStr: string): CyclePhase | null => {
     if (periodDates.has(dateStr)) return 'menstruation';
 
     for (const cycle of cycles) {
+      // Skip completed cycles for dates past their end
+      if (cycle.endDate && dateStr >= cycle.endDate) continue;
       const cycleLength = cycle.cycleLength ?? profile.typicalCycleLength;
-      const phase = calculatePhase(dateStr, cycle.startDate, cycleLength, cycle.periodLength);
+
+      // For ongoing cycle, stretch phases to today when period is late
+      let effectiveLength: number | undefined;
+      if (!cycle.endDate) {
+        const todayDay = differenceInDays(today, parseISO(cycle.startDate)) + 1;
+        if (todayDay > cycleLength) effectiveLength = todayDay;
+      }
+
+      const phase = calculatePhase(dateStr, cycle.startDate, cycleLength, cycle.periodLength, effectiveLength);
       if (phase) return phase.phase;
     }
     return null;
@@ -113,10 +166,15 @@ export function CalendarGrid({ month, onSelectDay, selectedDate }: CalendarGridP
           const isToday = isSameDay(day, today);
           const isSelected = selectedDate === dateStr;
           const isPeriod = periodDates.has(dateStr);
+          const isPredicted = !isPeriod && predictedPeriodDates.has(dateStr);
           const phase = isCurrentMonth ? getPhaseForDate(dateStr) : null;
+          const predictedPhase = !phase ? predictedPhaseDates.get(dateStr) : undefined;
           const fertility = fertilityDates.get(dateStr);
 
-          const phaseColor = phase ? PHASES[phase].lightColor : undefined;
+          const phaseColor = phase ? colors.phases[phase].color + '55' : undefined;
+          const predictedBg = predictedPhase && !phaseColor
+            ? colors.phases[predictedPhase].color + '30'
+            : undefined;
 
           return (
             <TouchableOpacity
@@ -124,6 +182,8 @@ export function CalendarGrid({ month, onSelectDay, selectedDate }: CalendarGridP
               style={[
                 styles.dayCell,
                 phaseColor ? { backgroundColor: phaseColor } : undefined,
+                predictedBg ? { backgroundColor: predictedBg } : undefined,
+                isToday && isCurrentMonth && styles.todayCell,
                 isSelected && styles.daySelected,
               ]}
               onPress={() => onSelectDay(dateStr)}
@@ -135,15 +195,17 @@ export function CalendarGrid({ month, onSelectDay, selectedDate }: CalendarGridP
                   !isCurrentMonth && styles.dayTextOutside,
                   isToday && styles.dayTextToday,
                   isPeriod && styles.dayTextPeriod,
+                  isPredicted && styles.dayTextPredicted,
                 ]}
               >
                 {format(day, 'd')}
               </Text>
               {isPeriod && <View style={styles.periodDot} />}
-              {fertility === 'peak' && !isPeriod && (
+              {isPredicted && <View style={styles.predictedDot} />}
+              {fertility === 'peak' && !isPeriod && !isPredicted && (
                 <View style={[styles.fertilityDot, styles.peakDot]} />
               )}
-              {fertility === 'high' && !isPeriod && (
+              {fertility === 'high' && !isPeriod && !isPredicted && (
                 <View style={[styles.fertilityDot, styles.highDot]} />
               )}
             </TouchableOpacity>
@@ -154,71 +216,87 @@ export function CalendarGrid({ month, onSelectDay, selectedDate }: CalendarGridP
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 4,
-  },
-  weekdayRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  weekdayCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  weekdayText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#999',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCell: {
-    width: '14.285%',
-    aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  daySelected: {
-    borderWidth: 2,
-    borderColor: '#E74C3C',
-  },
-  dayText: {
-    fontSize: 15,
-    color: '#333',
-  },
-  dayTextOutside: {
-    color: '#CCC',
-  },
-  dayTextToday: {
-    fontWeight: 'bold',
-    color: '#E74C3C',
-  },
-  dayTextPeriod: {
-    fontWeight: 'bold',
-    color: '#C0392B',
-  },
-  periodDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E74C3C',
-    marginTop: 2,
-  },
-  fertilityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 2,
-  },
-  peakDot: {
-    backgroundColor: '#2ECC71',
-  },
-  highDot: {
-    backgroundColor: '#82E0AA',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {},
+    weekdayRow: {
+      flexDirection: 'row',
+      marginBottom: s(4),
+    },
+    weekdayCell: {
+      width: '14.2857%',
+      alignItems: 'center',
+      paddingVertical: s(8),
+    },
+    weekdayText: {
+      fontSize: fs(12),
+      fontWeight: '600',
+      color: colors.textMuted,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    dayCell: {
+      width: '14.2857%',
+      height: s(56),
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: s(8),
+    },
+    todayCell: {
+      borderWidth: 2,
+      borderColor: colors.primary,
+    },
+    daySelected: {
+      borderWidth: 2,
+      borderColor: colors.text,
+    },
+    dayText: {
+      fontSize: fs(15),
+      color: colors.text,
+    },
+    dayTextOutside: {
+      color: colors.textDisabled,
+    },
+    dayTextToday: {
+      fontWeight: 'bold',
+      color: colors.primary,
+    },
+    dayTextPeriod: {
+      fontWeight: 'bold',
+      color: colors.phases.menstruation.color,
+    },
+    dayTextPredicted: {
+      color: colors.phases.menstruation.color,
+      opacity: 0.6,
+    },
+    periodDot: {
+      width: s(6),
+      height: s(6),
+      borderRadius: s(3),
+      backgroundColor: colors.phases.menstruation.color,
+      marginTop: s(2),
+    },
+    predictedDot: {
+      width: s(6),
+      height: s(6),
+      borderRadius: s(3),
+      borderWidth: 1.5,
+      borderColor: colors.phases.menstruation.color,
+      backgroundColor: 'transparent',
+      marginTop: s(2),
+    },
+    fertilityDot: {
+      width: s(6),
+      height: s(6),
+      borderRadius: s(3),
+      marginTop: s(2),
+    },
+    peakDot: {
+      backgroundColor: colors.success,
+    },
+    highDot: {
+      backgroundColor: colors.successLight,
+    },
+  });

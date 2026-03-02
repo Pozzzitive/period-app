@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSettingsStore } from '@/src/stores';
+import { useTheme, type ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function NotificationsSetupScreen() {
   const router = useRouter();
   const notifications = useSettingsStore((s) => s.settings.notifications);
   const updateNotifications = useSettingsStore((s) => s.updateNotifications);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const notificationOptions = [
     { key: 'periodReminder' as const, label: 'Period reminder', desc: '5 days before your predicted period', default: true },
@@ -43,7 +47,7 @@ export default function NotificationsSetupScreen() {
             <Switch
               value={notifications[option.key]}
               onValueChange={(val) => updateNotifications({ [option.key]: val })}
-              trackColor={{ true: '#E74C3C' }}
+              trackColor={{ true: colors.switchActive }}
             />
           </View>
         ))}
@@ -59,60 +63,60 @@ export default function NotificationsSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
-    padding: 24,
+    backgroundColor: colors.background,
+    padding: s(24),
   },
   content: {
-    paddingTop: 40,
-    paddingBottom: 24,
+    paddingTop: s(40),
+    paddingBottom: s(24),
   },
   title: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: s(8),
   },
   subtitle: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 24,
+    fontSize: fs(15),
+    color: colors.textSecondary,
+    marginBottom: s(24),
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    backgroundColor: colors.surface,
+    padding: s(16),
+    borderRadius: s(12),
+    marginBottom: s(8),
   },
   rowText: {
     flex: 1,
-    marginRight: 12,
+    marginRight: s(12),
   },
   rowLabel: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   rowDesc: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
+    fontSize: fs(13),
+    color: colors.textTertiary,
+    marginTop: s(2),
   },
   button: {
-    backgroundColor: '#E74C3C',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: s(16),
+    borderRadius: s(12),
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: s(16),
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: colors.onPrimary,
+    fontSize: fs(18),
     fontWeight: '600',
   },
 });

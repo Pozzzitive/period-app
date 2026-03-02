@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -14,8 +14,13 @@ import type { SymptomCategory } from '@/src/constants/symptoms';
 import { MOODS } from '@/src/constants/moods';
 import { CONDITIONS_BY_ID } from '@/src/constants/conditions';
 import { TeenagerGate } from '@/src/components/common/TeenagerGate';
+import { IntercourseDetailSheet } from '@/src/components/log/IntercourseDetailSheet';
+import { IntercourseAddSheet } from '@/src/components/log/IntercourseAddSheet';
 import { formatDate } from '@/src/utils/dates';
-import type { FlowIntensity, SymptomEntry, IntercourseEntry } from '@/src/models';
+import type { FlowIntensity, SymptomEntry } from '@/src/models';
+import { useTheme } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
+import type { ThemeColors } from '@/src/theme';
 
 const FLOW_OPTIONS: { value: FlowIntensity; label: string; icon: string }[] = [
   { value: 'spotting', label: 'Spotting', icon: '💧' },
@@ -26,19 +31,25 @@ const FLOW_OPTIONS: { value: FlowIntensity; label: string; icon: string }[] = [
 
 export default function DayDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
+  const { colors } = useTheme();
   const log = useLogStore((s) => s.logs[date]);
   const setFlow = useLogStore((s) => s.setFlow);
   const setSymptoms = useLogStore((s) => s.setSymptoms);
   const setMoods = useLogStore((s) => s.setMoods);
-  const setIntercourse = useLogStore((s) => s.setIntercourse);
   const setNotes = useLogStore((s) => s.setNotes);
   const profile = useUserStore((s) => s.profile);
+
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [selectedFlow, setSelectedFlow] = useState<FlowIntensity | undefined>(log?.flow);
   const [selectedSymptoms, setSelectedSymptoms] = useState<SymptomEntry[]>(log?.symptoms ?? []);
   const [selectedMoods, setSelectedMoods] = useState<string[]>(log?.moods ?? []);
-  const [intercourseData, setIntercourseData] = useState<IntercourseEntry | undefined>(log?.intercourse);
   const [notes, setNotesText] = useState(log?.notes ?? '');
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [addVisible, setAddVisible] = useState(false);
+
+  const intercourseEntries = log?.intercourse;
+  const entryCount = intercourseEntries?.length ?? 0;
 
   // Get condition-relevant symptoms to show first
   const conditionSymptomIds = profile.healthConditions.flatMap((condId) => {
@@ -58,10 +69,6 @@ export default function DayDetailScreen() {
   useEffect(() => {
     setMoods(date, selectedMoods);
   }, [selectedMoods]);
-
-  useEffect(() => {
-    setIntercourse(date, intercourseData);
-  }, [intercourseData]);
 
   const toggleSymptom = (symptomId: string) => {
     setSelectedSymptoms((prev) => {
@@ -151,7 +158,6 @@ export default function DayDetailScreen() {
         {/* All symptoms by category */}
         {(Object.entries(SYMPTOM_CATEGORIES) as [SymptomCategory, string][])
           .filter(([cat]) => {
-            // Hide sexual category in teenager mode
             if (cat === 'sexual' && profile.isTeenager) return false;
             return true;
           })
@@ -203,52 +209,24 @@ export default function DayDetailScreen() {
 
         {/* Intercourse - hidden in teenager mode */}
         <TeenagerGate>
-          <Text style={styles.sectionTitle}>Intercourse</Text>
+          <Text style={styles.sectionTitle}>Intimacy</Text>
           <View style={styles.flowRow}>
-            <TouchableOpacity
-              style={[
-                styles.flowButton,
-                intercourseData?.logged && styles.flowButtonActive,
-              ]}
-              onPress={() =>
-                setIntercourseData(
-                  intercourseData?.logged
-                    ? undefined
-                    : { logged: true, protected: undefined }
-                )
-              }
-            >
-              <Text style={styles.flowLabel}>
-                {intercourseData?.logged ? 'Logged ✓' : 'Log activity'}
-              </Text>
-            </TouchableOpacity>
-
-            {intercourseData?.logged && (
-              <>
-                <TouchableOpacity
-                  style={[
-                    styles.flowButton,
-                    intercourseData.protected === true && styles.flowButtonActive,
-                  ]}
-                  onPress={() =>
-                    setIntercourseData({ ...intercourseData, protected: true })
-                  }
-                >
-                  <Text style={styles.flowLabel}>Protected</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.flowButton,
-                    intercourseData.protected === false && styles.flowButtonActive,
-                  ]}
-                  onPress={() =>
-                    setIntercourseData({ ...intercourseData, protected: false })
-                  }
-                >
-                  <Text style={styles.flowLabel}>Unprotected</Text>
-                </TouchableOpacity>
-              </>
+            {entryCount > 0 && (
+              <TouchableOpacity
+                style={[styles.flowButton, styles.flowButtonActive]}
+                onPress={() => setDetailVisible(true)}
+              >
+                <Text style={[styles.flowLabel, styles.flowLabelActive]}>
+                  ♥ {entryCount} {entryCount === 1 ? 'entry' : 'entries'}
+                </Text>
+              </TouchableOpacity>
             )}
+            <TouchableOpacity
+              style={styles.flowButton}
+              onPress={() => setAddVisible(true)}
+            >
+              <Text style={styles.flowLabel}>+ Add entry</Text>
+            </TouchableOpacity>
           </View>
         </TeenagerGate>
 
@@ -257,128 +235,139 @@ export default function DayDetailScreen() {
         <TextInput
           style={styles.notesInput}
           placeholder="Add notes for this day..."
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textMuted}
           multiline
           value={notes}
           onChangeText={setNotesText}
           onBlur={() => setNotes(date, notes)}
         />
       </ScrollView>
+      <IntercourseDetailSheet
+        visible={detailVisible}
+        date={date}
+        onClose={() => setDetailVisible(false)}
+      />
+      <IntercourseAddSheet
+        visible={addVisible}
+        date={date}
+        onClose={() => setAddVisible(false)}
+      />
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF5F5',
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  sectionHint: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 8,
-  },
-  subSectionTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#888',
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  flowRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  flowButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    alignItems: 'center',
-    minWidth: 75,
-  },
-  flowButtonActive: {
-    backgroundColor: '#FADBD8',
-    borderColor: '#E74C3C',
-  },
-  flowIcon: {
-    fontSize: 18,
-    marginBottom: 4,
-  },
-  flowLabel: {
-    fontSize: 13,
-    color: '#333',
-    fontWeight: '500',
-  },
-  flowLabelActive: {
-    color: '#C0392B',
-  },
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    gap: 4,
-  },
-  chipActive: {
-    backgroundColor: '#FADBD8',
-    borderColor: '#E74C3C',
-  },
-  chipIcon: {
-    fontSize: 14,
-  },
-  chipText: {
-    fontSize: 13,
-    color: '#333',
-  },
-  chipTextActive: {
-    color: '#C0392B',
-    fontWeight: '500',
-  },
-  severityBadge: {
-    backgroundColor: '#E74C3C',
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    textAlign: 'center',
-    lineHeight: 16,
-    overflow: 'hidden',
-  },
-  notesInput: {
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 12,
-    minHeight: 100,
-    fontSize: 15,
-    color: '#333',
-    textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: s(16),
+      paddingBottom: s(40),
+    },
+    sectionTitle: {
+      fontSize: fs(18),
+      fontWeight: '600',
+      color: colors.text,
+      marginTop: s(20),
+      marginBottom: s(8),
+    },
+    sectionHint: {
+      fontSize: fs(13),
+      color: colors.textTertiary,
+      marginBottom: s(8),
+    },
+    subSectionTitle: {
+      fontSize: fs(14),
+      fontWeight: '500',
+      color: colors.textTertiary,
+      marginTop: s(12),
+      marginBottom: s(6),
+    },
+    flowRow: {
+      flexDirection: 'row',
+      gap: s(8),
+      flexWrap: 'wrap',
+    },
+    flowButton: {
+      paddingVertical: s(12),
+      paddingHorizontal: s(16),
+      borderRadius: s(12),
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      minWidth: s(75),
+    },
+    flowButtonActive: {
+      backgroundColor: colors.selectedBackground,
+      borderColor: colors.selectedBorder,
+    },
+    flowIcon: {
+      fontSize: fs(18),
+      marginBottom: s(4),
+    },
+    flowLabel: {
+      fontSize: fs(13),
+      color: colors.text,
+      fontWeight: '500',
+    },
+    flowLabelActive: {
+      color: colors.primary,
+    },
+    chipGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: s(8),
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: s(8),
+      paddingHorizontal: s(12),
+      borderRadius: s(20),
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: s(4),
+    },
+    chipActive: {
+      backgroundColor: colors.selectedBackground,
+      borderColor: colors.selectedBorder,
+    },
+    chipIcon: {
+      fontSize: fs(14),
+    },
+    chipText: {
+      fontSize: fs(13),
+      color: colors.text,
+    },
+    chipTextActive: {
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    severityBadge: {
+      backgroundColor: colors.primary,
+      color: colors.onPrimary,
+      fontSize: fs(10),
+      fontWeight: 'bold',
+      width: s(16),
+      height: s(16),
+      borderRadius: s(8),
+      textAlign: 'center',
+      lineHeight: fs(16),
+      overflow: 'hidden',
+    },
+    notesInput: {
+      backgroundColor: colors.surface,
+      padding: s(16),
+      borderRadius: s(12),
+      minHeight: s(100),
+      fontSize: fs(15),
+      color: colors.text,
+      textAlignVertical: 'top',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+  });

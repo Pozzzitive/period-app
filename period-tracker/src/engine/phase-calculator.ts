@@ -22,20 +22,24 @@ const PHASE_PROPORTIONS: Record<CyclePhase, { start: number; end: number }> = {
  * @param cycleStartDate - Start date of the current cycle (YYYY-MM-DD)
  * @param cycleLength - Expected total length of the cycle
  * @param periodLength - Length of the menstruation period
+ * @param effectiveCycleLength - When the period is late, pass max(cycleLength, todayDayInCycle)
+ *   to stretch all phases proportionally. Must be consistent across all dates in the same cycle.
  */
 export function calculatePhase(
   dateStr: string,
   cycleStartDate: string,
   cycleLength: number = DEFAULT_CYCLE_LENGTH,
-  periodLength: number = 5
+  periodLength: number = 5,
+  effectiveCycleLength?: number,
 ): PhaseInfo | null {
   const date = parseISO(dateStr);
   const cycleStart = parseISO(cycleStartDate);
   const dayInCycle = differenceInDays(date, cycleStart) + 1; // 1-indexed
 
-  if (dayInCycle < 1 || dayInCycle > cycleLength) return null;
+  const effLen = effectiveCycleLength ?? cycleLength;
+  if (dayInCycle < 1 || dayInCycle > effLen) return null;
 
-  // Scale phase boundaries to actual cycle length
+  // Scale phase boundaries to effective cycle length
   const phases: Array<{ phase: CyclePhase; startDay: number; endDay: number }> = [];
 
   // Menstruation: always uses actual period length
@@ -45,8 +49,8 @@ export function calculatePhase(
     endDay: periodLength,
   });
 
-  // Ovulation is fixed at cycleLength - 14 (calendar method)
-  const ovulationDay = Math.max(cycleLength - 14, periodLength + 2);
+  // Ovulation is fixed at effLen - 14 (calendar method)
+  const ovulationDay = Math.max(effLen - 14, periodLength + 2);
 
   // Follicular: from end of period to ovulation - 1
   phases.push({
@@ -59,11 +63,11 @@ export function calculatePhase(
   phases.push({
     phase: 'ovulation',
     startDay: ovulationDay,
-    endDay: Math.min(ovulationDay + 1, cycleLength),
+    endDay: Math.min(ovulationDay + 1, effLen),
   });
 
   // Premenstrual: last 5 days of cycle
-  const pmsStart = Math.max(cycleLength - 4, ovulationDay + 2);
+  const pmsStart = Math.max(effLen - 4, ovulationDay + 2);
 
   // Luteal: from after ovulation to before PMS
   phases.push({
@@ -76,7 +80,7 @@ export function calculatePhase(
   phases.push({
     phase: 'premenstrual',
     startDay: pmsStart,
-    endDay: cycleLength,
+    endDay: effLen,
   });
 
   // Find which phase the current day falls in
@@ -87,17 +91,17 @@ export function calculatePhase(
         dayInPhase: dayInCycle - p.startDay + 1,
         dayInCycle,
         totalPhaseDays: p.endDay - p.startDay + 1,
-        cycleLength,
+        cycleLength, // original, so ring shows "Day 32 of 28"
       };
     }
   }
 
-  // Fallback: if day is beyond all defined phases (edge case with very short cycles)
+  // Fallback: edge case with very short cycles
   return {
-    phase: 'luteal',
-    dayInPhase: 1,
+    phase: 'premenstrual',
+    dayInPhase: dayInCycle - pmsStart + 1,
     dayInCycle,
-    totalPhaseDays: 1,
+    totalPhaseDays: effLen - pmsStart + 1,
     cycleLength,
   };
 }
@@ -108,17 +112,19 @@ export function calculatePhase(
 export function getCyclePhaseRanges(
   cycleStartDate: string,
   cycleLength: number = DEFAULT_CYCLE_LENGTH,
-  periodLength: number = 5
+  periodLength: number = 5,
+  lateDays: number = 0,
 ): Array<{ phase: CyclePhase; startDay: number; endDay: number }> {
-  const ovulationDay = Math.max(cycleLength - 14, periodLength + 2);
-  const pmsStart = Math.max(cycleLength - 4, ovulationDay + 2);
+  const effectiveLength = cycleLength + lateDays;
+  const ovulationDay = Math.max(effectiveLength - 14, periodLength + 2);
+  const pmsStart = Math.max(effectiveLength - 4, ovulationDay + 2);
 
   const ranges: Array<{ phase: CyclePhase; startDay: number; endDay: number }> = [
     { phase: 'menstruation', startDay: 1, endDay: periodLength },
     { phase: 'follicular', startDay: periodLength + 1, endDay: ovulationDay - 1 },
-    { phase: 'ovulation', startDay: ovulationDay, endDay: Math.min(ovulationDay + 1, cycleLength) },
+    { phase: 'ovulation', startDay: ovulationDay, endDay: Math.min(ovulationDay + 1, effectiveLength) },
     { phase: 'luteal', startDay: ovulationDay + 2, endDay: pmsStart - 1 },
-    { phase: 'premenstrual', startDay: pmsStart, endDay: cycleLength },
+    { phase: 'premenstrual', startDay: pmsStart, endDay: effectiveLength },
   ];
   return ranges.filter((p) => p.startDay <= p.endDay);
 }

@@ -1,8 +1,11 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import Svg, { Path, Circle as SvgCircle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { s, fs } from '@/src/utils/scale';
 import { getCyclePhaseRanges } from '@/src/engine';
+import { PHASES } from '@/src/constants/phases';
 import { useTheme } from '@/src/theme';
 import type { ThemeColors } from '@/src/theme';
 import type { PhaseInfo } from '@/src/models';
@@ -20,12 +23,13 @@ interface CycleRingProps {
   onHistory: () => void;
 }
 
-const SIZE = 240;
+const SIZE = s(240);
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-const RADIUS = 106;
-const STROKE_WIDTH = 13;
-const GAP_DEGREES = 2;
+const RADIUS = s(106);
+const STROKE_WIDTH = s(13);
+const GAP_DEGREES = 2;  // degrees, not pixels — leave as-is
+const HIT_SLOP_WIDTH = s(28);
 
 // ── SVG helpers ─────────────────────────────────────────────
 
@@ -57,6 +61,7 @@ interface ArcSegment {
   startDay: number;
   endDay: number;
   color: string;
+  tintColor: string;
 }
 
 export function CycleRing({
@@ -73,10 +78,15 @@ export function CycleRing({
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const hasData = phase !== null;
+  const [selectedSegment, setSelectedSegment] = useState<CyclePhase | null>(null);
+
+  // How many days past the expected cycle end (period is late)
+  const lateDays = phase ? Math.max(0, phase.dayInCycle - cycleLength) : 0;
+  const effectiveLength = cycleLength + lateDays;
 
   // Build arc segments from engine ranges
   const segments = useMemo((): ArcSegment[] => {
-    const ranges = getCyclePhaseRanges('2000-01-01', cycleLength, periodLength);
+    const ranges = getCyclePhaseRanges('2000-01-01', cycleLength, periodLength, lateDays);
     const totalGap = ranges.length * GAP_DEGREES;
     const usable = 360 - totalGap;
 
@@ -85,7 +95,7 @@ export function CycleRing({
 
     for (const range of ranges) {
       const days = range.endDay - range.startDay + 1;
-      const sweep = (days / cycleLength) * usable;
+      const sweep = (days / effectiveLength) * usable;
       const halfGap = GAP_DEGREES / 2;
 
       result.push({
@@ -95,13 +105,14 @@ export function CycleRing({
         startDay: range.startDay,
         endDay: range.endDay,
         color: colors.phases[range.phase].color,
+        tintColor: colors.phases[range.phase].color + '55',
       });
 
       angle += halfGap + sweep + halfGap;
     }
 
     return result;
-  }, [cycleLength, periodLength, colors.phases]);
+  }, [cycleLength, periodLength, lateDays, effectiveLength, colors.phases]);
 
   // Day indicator dot
   const dot = useMemo(() => {
@@ -120,26 +131,55 @@ export function CycleRing({
     return null;
   }, [phase, segments]);
 
+  const handleSegmentPress = useCallback((segPhase: CyclePhase) => {
+    setSelectedSegment((prev) => (prev === segPhase ? null : segPhase));
+  }, []);
+
+  // Info + position for the selected segment callout
+  const segmentInfo = useMemo(() => {
+    if (!selectedSegment) return null;
+    const seg = segments.find((s) => s.phase === selectedSegment);
+    if (!seg) return null;
+    const days = seg.endDay - seg.startDay + 1;
+    const label = PHASES[seg.phase].label;
+    const midAngle = (seg.startAngle + seg.endAngle) / 2;
+    const pos = polarToCartesian(CX, CY, RADIUS + s(28), midAngle);
+    return { label, days, color: seg.color, x: pos.x, y: pos.y };
+  }, [selectedSegment, segments]);
+
   return (
-    <View style={styles.container}>
+    <Pressable style={styles.container} onPress={() => setSelectedSegment(null)}>
       <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
         {hasData ? (
           <>
+            {/* Invisible wider hit areas for tapping */}
+            {segments.map((seg) => (
+              <Path
+                key={`hit-${seg.phase}`}
+                d={describeArc(CX, CY, RADIUS, seg.startAngle, seg.endAngle)}
+                stroke="transparent"
+                strokeWidth={HIT_SLOP_WIDTH}
+                fill="none"
+                onPress={() => handleSegmentPress(seg.phase)}
+              />
+            ))}
+            {/* Visible arcs */}
             {segments.map((seg) => (
               <Path
                 key={seg.phase}
                 d={describeArc(CX, CY, RADIUS, seg.startAngle, seg.endAngle)}
-                stroke={seg.color}
-                strokeWidth={STROKE_WIDTH}
+                stroke={selectedSegment === seg.phase || phase?.phase === seg.phase ? seg.color : seg.tintColor}
+                strokeWidth={selectedSegment === seg.phase ? STROKE_WIDTH + s(3) : STROKE_WIDTH}
                 strokeLinecap="round"
                 fill="none"
+                onPress={() => handleSegmentPress(seg.phase)}
               />
             ))}
             {dot && (
               <SvgCircle
                 cx={dot.x}
                 cy={dot.y}
-                r={7}
+                r={s(7)}
                 fill={dot.color}
                 stroke="#FFFFFF"
                 strokeWidth={2.5}
@@ -158,7 +198,7 @@ export function CycleRing({
         )}
       </Svg>
 
-      {/* Center content */}
+      {/* Center content — always visible */}
       <View style={styles.center}>
         {hasData ? (
           <>
@@ -172,7 +212,7 @@ export function CycleRing({
         {/* Primary action */}
         {isOngoingPeriod ? (
           <TouchableOpacity style={styles.btn} onPress={onEndPeriod} activeOpacity={0.7}>
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
+            <Ionicons name="checkmark-circle-outline" size={s(14)} color={colors.success} />
             <Text style={[styles.btnText, { color: colors.success }]}>End period</Text>
           </TouchableOpacity>
         ) : (
@@ -181,7 +221,7 @@ export function CycleRing({
             onPress={onLogPeriod}
             activeOpacity={0.7}
           >
-            <Ionicons name="water-outline" size={16} color={colors.onPrimary} />
+            <Ionicons name="water-outline" size={s(14)} color={colors.onPrimary} />
             <Text style={[styles.btnText, styles.btnTextPrimary]}>
               Log period
             </Text>
@@ -189,18 +229,48 @@ export function CycleRing({
         )}
 
         {/* Secondary actions */}
-        <View style={styles.chips}>
-          <TouchableOpacity style={styles.chip} onPress={onLogToday} activeOpacity={0.6}>
-            <Text style={styles.chipText}>Symptoms</Text>
-          </TouchableOpacity>
-          {periodCount > 0 && (
-            <TouchableOpacity style={styles.chip} onPress={onHistory} activeOpacity={0.6}>
-              <Text style={styles.chipText}>History</Text>
+        {hasData && (
+          <View style={styles.chips}>
+            <TouchableOpacity style={styles.chip} onPress={onLogToday} activeOpacity={0.6}>
+              <Text style={styles.chipText}>Symptoms</Text>
             </TouchableOpacity>
-          )}
-        </View>
+            {periodCount > 0 && (
+              <TouchableOpacity style={styles.chip} onPress={onHistory} activeOpacity={0.6}>
+                <Text style={styles.chipText}>History</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
-    </View>
+
+      {/* Animated side callout */}
+      {segmentInfo && (
+        <Animated.View
+          key={selectedSegment}
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(150)}
+          style={[
+            styles.callout,
+            {
+              backgroundColor: segmentInfo.color,
+              left: Math.max(s(4), Math.min(segmentInfo.x - s(48), SIZE - s(100))),
+              top: Math.max(s(4), Math.min(segmentInfo.y - s(16), SIZE - s(36))),
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => setSelectedSegment(null)}
+            activeOpacity={0.8}
+            style={styles.calloutInner}
+          >
+            <Text style={styles.calloutLabel}>{segmentInfo.label}</Text>
+            <Text style={styles.calloutDays}>
+              {segmentInfo.days} {segmentInfo.days === 1 ? 'day' : 'days'}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+    </Pressable>
   );
 }
 
@@ -211,50 +281,51 @@ const createStyles = (colors: ThemeColors) =>
     container: {
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 16,
+      marginBottom: 0,
       height: SIZE,
     },
     center: {
       position: 'absolute',
       alignItems: 'center',
       justifyContent: 'center',
+      maxWidth: RADIUS * 2 - STROKE_WIDTH * 2 - s(16),
     },
     dayText: {
-      fontSize: 32,
+      fontSize: fs(28),
       fontWeight: '700',
       color: colors.text,
     },
     ofText: {
-      fontSize: 16,
+      fontSize: fs(14),
       fontWeight: '500',
       color: colors.textTertiary,
-      marginBottom: 12,
+      marginBottom: s(8),
     },
     startText: {
-      fontSize: 18,
+      fontSize: fs(18),
       fontWeight: '600',
       color: colors.textSecondary,
-      marginBottom: 12,
+      marginBottom: s(12),
     },
     btn: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 22,
-      paddingVertical: 11,
-      borderRadius: 22,
+      gap: s(5),
+      paddingHorizontal: s(16),
+      paddingVertical: s(8),
+      borderRadius: s(20),
       backgroundColor: colors.surfaceTertiary,
     },
     btnPrimary: {
       backgroundColor: colors.primary,
       shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: { width: 0, height: s(2) },
       shadowOpacity: 0.3,
-      shadowRadius: 4,
+      shadowRadius: s(4),
       elevation: 3,
     },
     btnText: {
-      fontSize: 15,
+      fontSize: fs(13),
       fontWeight: '600',
       color: colors.text,
     },
@@ -264,20 +335,45 @@ const createStyles = (colors: ThemeColors) =>
     chips: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 12,
-      gap: 8,
+      marginTop: s(8),
+      gap: s(6),
     },
     chip: {
-      paddingHorizontal: 12,
-      paddingVertical: 5,
-      borderRadius: 12,
+      paddingHorizontal: s(10),
+      paddingVertical: s(4),
+      borderRadius: s(10),
       borderWidth: 1,
       borderColor: colors.borderLight,
       backgroundColor: colors.surface,
     },
     chipText: {
-      fontSize: 12,
+      fontSize: fs(11),
       fontWeight: '500',
       color: colors.primary,
+    },
+    callout: {
+      position: 'absolute',
+      borderRadius: s(12),
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: s(2) },
+      shadowOpacity: 0.2,
+      shadowRadius: s(4),
+      elevation: 4,
+    },
+    calloutInner: {
+      alignItems: 'center',
+      paddingHorizontal: s(10),
+      paddingVertical: s(6),
+    },
+    calloutLabel: {
+      fontSize: fs(12),
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    calloutDays: {
+      fontSize: fs(10),
+      fontWeight: '500',
+      color: 'rgba(255,255,255,0.85)',
+      marginTop: 1,
     },
   });

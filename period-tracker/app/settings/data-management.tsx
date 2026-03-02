@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useCycleStore, useLogStore, useUserStore, useSettingsStore, useSubscriptionStore, useAuthStore } from '@/src/stores';
 import { exportAsJSON, shareExport } from '@/src/services/data-export';
+import { useTheme } from '@/src/theme';
+import type { ThemeColors } from '@/src/theme';
+import { s, fs } from '@/src/utils/scale';
 
 export default function DataManagementScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleExport = async () => {
     try {
@@ -43,7 +49,7 @@ export default function DataManagementScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.sectionTitle}>Export</Text>
       <TouchableOpacity style={styles.card} onPress={handleExport}>
-        <Text style={styles.cardEmoji}>📤</Text>
+        <Ionicons name="share-outline" size={s(28)} color={colors.primary} style={styles.cardIcon} />
         <Text style={styles.cardTitle}>Export as JSON</Text>
         <Text style={styles.cardDesc}>
           Download all your data as a JSON file. You can share this with your
@@ -53,7 +59,7 @@ export default function DataManagementScreen() {
 
       <Text style={styles.sectionTitle}>Delete</Text>
       <TouchableOpacity style={[styles.card, styles.dangerCard]} onPress={handleDeleteAll}>
-        <Text style={styles.cardEmoji}>🗑️</Text>
+        <Ionicons name="trash-outline" size={s(28)} color={colors.destructive} style={styles.cardIcon} />
         <Text style={[styles.cardTitle, styles.dangerText]}>Delete all data</Text>
         <Text style={styles.cardDesc}>
           Permanently remove all your data from this device. This includes all
@@ -64,50 +70,49 @@ export default function DataManagementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: s(16),
+    paddingBottom: s(32),
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontWeight: '600',
-    color: '#888',
+    color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 8,
-    marginBottom: 8,
+    letterSpacing: fs(1),
+    marginTop: s(8),
+    marginBottom: s(8),
   },
   card: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 14,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    padding: s(20),
+    borderRadius: s(14),
+    marginBottom: s(12),
   },
   dangerCard: {
     borderWidth: 1,
-    borderColor: '#FFCDD2',
+    borderColor: colors.destructiveLight,
   },
-  cardEmoji: {
-    fontSize: 28,
-    marginBottom: 8,
+  cardIcon: {
+    marginBottom: s(8),
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize: fs(17),
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: colors.text,
+    marginBottom: s(4),
   },
   dangerText: {
-    color: '#C0392B',
+    color: colors.destructive,
   },
   cardDesc: {
-    fontSize: 14,
-    color: '#888',
-    lineHeight: 20,
+    fontSize: fs(14),
+    color: colors.textTertiary,
+    lineHeight: fs(20),
   },
 });
