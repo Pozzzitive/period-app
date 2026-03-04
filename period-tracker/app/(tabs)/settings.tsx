@@ -4,6 +4,9 @@ import { useRouter } from 'expo-router';
 import { useSettingsStore, useUserStore } from '@/src/stores';
 import { TeenagerGate } from '@/src/components/common/TeenagerGate';
 import { ThemePicker } from '@/src/components/settings/ThemePicker';
+import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlowers';
+import { CornerFlowers } from '@/src/components/decorations/CornerFlowers';
+import { useBarInsets } from '@/src/hooks/useBarInsets';
 import { useTheme } from '@/src/theme';
 import type { ThemeColors } from '@/src/theme';
 import { s, fs } from '@/src/utils/scale';
@@ -17,6 +20,7 @@ const DARK_MODE_DESC: Record<string, string> = {
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const barInsets = useBarInsets();
   const settings = useSettingsStore((s) => s.settings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const profile = useUserStore((s) => s.profile);
@@ -32,7 +36,9 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScreenWithFlowers backgroundColor={colors.background}>
+    <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, { paddingTop: barInsets.top + s(16), paddingBottom: barInsets.bottom + s(32) }]}>
+      <CornerFlowers />
       <Text style={styles.title}>Settings</Text>
 
       {/* Appearance */}
@@ -46,6 +52,19 @@ export default function SettingsScreen() {
           <Switch
             value={settings.theme === 'dark'}
             onValueChange={toggleDarkMode}
+            trackColor={{ false: colors.surfaceTertiary, true: colors.switchActive }}
+          />
+        }
+      />
+
+      <SettingRow
+        label="Flower decorations"
+        description={settings.showFlowerDecorations ? 'Themed flowers on every screen' : 'Off'}
+        colors={colors}
+        right={
+          <Switch
+            value={settings.showFlowerDecorations}
+            onValueChange={(val) => updateSettings({ showFlowerDecorations: val })}
             trackColor={{ false: colors.surfaceTertiary, true: colors.switchActive }}
           />
         }
@@ -172,6 +191,7 @@ export default function SettingsScreen() {
         colors={colors}
       />
     </ScrollView>
+    </ScreenWithFlowers>
   );
 }
 
@@ -229,13 +249,11 @@ const settingRowStyles = StyleSheet.create({
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    container: {
+    scrollView: {
       flex: 1,
-      backgroundColor: colors.background,
     },
     content: {
-      padding: s(16),
-      paddingBottom: s(32),
+      paddingHorizontal: s(16),
     },
     title: {
       fontSize: fs(24),

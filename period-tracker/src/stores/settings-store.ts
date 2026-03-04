@@ -35,6 +35,7 @@ const defaultSettings: AppSettings = {
   },
   fertilityTrackingEnabled: false,
   partnerSharingEnabled: false,
+  showFlowerDecorations: true,
   theme: 'system',
   colorTheme: 'roseGarden' as const,
   gdprConsentGiven: false,

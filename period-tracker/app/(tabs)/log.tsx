@@ -9,6 +9,9 @@ import { IntercourseCalendarGrid } from '@/src/components/log/IntercourseCalenda
 import { IntercourseYearInPixels } from '@/src/components/log/IntercourseYearInPixels';
 import { IntercourseDetailSheet } from '@/src/components/log/IntercourseDetailSheet';
 import { IntercourseAddSheet } from '@/src/components/log/IntercourseAddSheet';
+import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlowers';
+import { FlowerBackground } from '@/src/components/decorations/FlowerBackground';
+import { useBarInsets } from '@/src/hooks/useBarInsets';
 import { useTheme } from '@/src/theme';
 import type { ThemeColors } from '@/src/theme';
 import { s, fs } from '@/src/utils/scale';
@@ -17,6 +20,7 @@ type ViewMode = 'monthly' | 'yearly';
 
 export default function LogScreen() {
   const { colors } = useTheme();
+  const barInsets = useBarInsets();
   const today = todayString();
   const log = useLogStore((s) => s.logs[today]);
 
@@ -69,9 +73,11 @@ export default function LogScreen() {
   }, []);
 
   return (
+    <ScreenWithFlowers backgroundColor={colors.background}>
     <TeenagerGate
       fallback={
-        <View style={styles.container}>
+        <View style={[styles.innerContainer, { paddingTop: barInsets.top + s(16), paddingBottom: barInsets.bottom + s(16) }]}>
+          <FlowerBackground />
           <View style={styles.teenPlaceholder}>
             <Ionicons name="lock-closed-outline" size={s(48)} color={colors.textMuted} />
             <Text style={styles.teenTitle}>Not available</Text>
@@ -80,7 +86,8 @@ export default function LogScreen() {
         </View>
       }
     >
-      <View style={styles.container}>
+      <View style={[styles.innerContainer, { paddingTop: barInsets.top + s(16), paddingBottom: barInsets.bottom + s(16) }]}>
+        <FlowerBackground />
         {/* Quick log card */}
         <View style={styles.quickCard}>
           <View style={styles.quickCardHeader}>
@@ -175,15 +182,15 @@ export default function LogScreen() {
         />
       </View>
     </TeenagerGate>
+    </ScreenWithFlowers>
   );
 }
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    container: {
+    innerContainer: {
       flex: 1,
-      backgroundColor: colors.background,
-      padding: s(16),
+      paddingHorizontal: s(16),
     },
     quickCard: {
       backgroundColor: colors.surface,

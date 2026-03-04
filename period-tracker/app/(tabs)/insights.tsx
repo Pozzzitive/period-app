@@ -7,6 +7,9 @@ import { standardDeviation } from '@/src/engine/prediction-engine';
 import { PhaseCard } from '@/src/components/common/PhaseCard';
 import { PredictionCard } from '@/src/components/common/PredictionCard';
 import { YearInPixels } from '@/src/components/calendar/YearInPixels';
+import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlowers';
+import { CornerFlowers } from '@/src/components/decorations/CornerFlowers';
+import { useBarInsets } from '@/src/hooks/useBarInsets';
 import { useTheme } from '@/src/theme';
 import type { ThemeColors } from '@/src/theme';
 import { s, fs } from '@/src/utils/scale';
@@ -15,6 +18,7 @@ type ViewMode = 'insights' | 'yearly';
 
 export default function InsightsScreen() {
   const { colors } = useTheme();
+  const barInsets = useBarInsets();
   const cycles = useCycleStore((s) => s.cycles);
   const profile = useUserStore((s) => s.profile);
   const prediction = usePrediction();
@@ -45,7 +49,9 @@ export default function InsightsScreen() {
   }, []);
 
   return (
-    <View style={styles.outerContainer}>
+    <ScreenWithFlowers backgroundColor={colors.background}>
+    <View style={[styles.outerContainer, { paddingTop: barInsets.top }]}>
+      <CornerFlowers />
       {/* Pill toggle */}
       <View style={styles.pillWrapper}>
         <View style={styles.pillContainer}>
@@ -159,6 +165,7 @@ export default function InsightsScreen() {
         </View>
       )}
     </View>
+    </ScreenWithFlowers>
   );
 }
 
@@ -189,7 +196,6 @@ const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     outerContainer: {
       flex: 1,
-      backgroundColor: colors.background,
     },
     pillWrapper: {
       paddingHorizontal: s(16),
@@ -231,7 +237,7 @@ const createStyles = (colors: ThemeColors) =>
     content: {
       padding: s(16),
       paddingTop: 0,
-      paddingBottom: s(32),
+      paddingBottom: s(80),
     },
     yearContainer: {
       flex: 1,
