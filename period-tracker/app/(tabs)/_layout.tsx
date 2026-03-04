@@ -7,7 +7,7 @@ import { s, fs } from '@/src/utils/scale';
 
 export default function TabLayout() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const headerButtons = () => (
     <View style={layoutStyles.headerRight}>
@@ -28,24 +28,37 @@ export default function TabLayout() {
     </View>
   );
 
+  // Semi-transparent tinted backgrounds for translucent bars
+  const headerBg = colors.primaryLight + (isDark ? 'CC' : 'BB');
+  const tabBarBg = colors.primaryLight + (isDark ? 'CC' : 'BB');
+
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarStyle: {
+          position: 'absolute',
           paddingTop: s(6),
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.tabBarBorder,
-          backgroundColor: colors.tabBarBackground,
+          backgroundColor: 'transparent',
+          elevation: 0,
         },
+        tabBarBackground: () => (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: tabBarBg }]} />
+        ),
         tabBarLabelStyle: {
           fontSize: fs(11),
           fontWeight: '600',
           marginTop: -2,
         },
+        headerTransparent: true,
+        headerBackground: () => (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: headerBg }]} />
+        ),
         headerStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: 'transparent',
         },
         headerTintColor: colors.text,
         headerRight: headerButtons,

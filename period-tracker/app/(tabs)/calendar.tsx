@@ -5,6 +5,9 @@ import { format, addMonths, subMonths } from 'date-fns';
 import { CalendarGrid } from '@/src/components/calendar/CalendarGrid';
 import { YearInPixels } from '@/src/components/calendar/YearInPixels';
 import { DaySummarySheet } from '@/src/components/calendar/DaySummarySheet';
+import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlowers';
+import { FlowerBackground } from '@/src/components/decorations/FlowerBackground';
+import { useBarInsets } from '@/src/hooks/useBarInsets';
 import { useMultiplePredictions } from '@/src/hooks/useMultiplePredictions';
 import { useSettingsStore, useUserStore } from '@/src/stores';
 import { useTheme } from '@/src/theme';
@@ -31,6 +34,7 @@ export default function CalendarScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetDate, setSheetDate] = useState('');
 
+  const barInsets = useBarInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handlePrevMonth = useCallback(() => {
@@ -70,7 +74,9 @@ export default function CalendarScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ScreenWithFlowers backgroundColor={colors.background}>
+    <View style={[styles.container, { paddingTop: barInsets.top + s(16), paddingBottom: barInsets.bottom + s(16) }]}>
+      <FlowerBackground />
       {/* View mode pill toggle */}
       <View style={styles.pillContainer}>
         <TouchableOpacity
@@ -196,6 +202,7 @@ export default function CalendarScreen() {
         showPredictedPhases={showPredictedPhases && predictionCount > 0}
       />
     </View>
+    </ScreenWithFlowers>
   );
 }
 
@@ -249,8 +256,7 @@ const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
-      padding: s(16),
+      paddingHorizontal: s(16),
     },
     pillContainer: {
       flexDirection: 'row',

@@ -11,6 +11,9 @@ import { MissingPeriodPrompt } from '@/src/components/common/MissingPeriodPrompt
 import { CycleRing } from '@/src/components/home/CycleRing';
 import { CalendarGrid } from '@/src/components/calendar/CalendarGrid';
 import { DaySummarySheet } from '@/src/components/calendar/DaySummarySheet';
+import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlowers';
+import { FlowerBackground } from '@/src/components/decorations/FlowerBackground';
+import { useBarInsets } from '@/src/hooks/useBarInsets';
 import { useCycleStore, useUserStore, useSettingsStore } from '@/src/stores';
 import { todayString, formatDate } from '@/src/utils/dates';
 import { useTheme } from '@/src/theme';
@@ -45,6 +48,7 @@ export default function TodayScreen() {
   const [sheetDate, setSheetDate] = useState('');
 
   const today = todayString();
+  const barInsets = useBarInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Check if there's an ongoing period (no end date)
@@ -143,7 +147,9 @@ export default function TodayScreen() {
   }, [router, sheetDate]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScreenWithFlowers backgroundColor={colors.background}>
+    <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, { paddingTop: barInsets.top + s(4), paddingBottom: barInsets.bottom + s(32) }]}>
+      <FlowerBackground />
       {/* Missing period prompt */}
       {showMissing && !dismissedMissing && (
         <MissingPeriodPrompt onDismiss={() => setDismissedMissing(true)} />
@@ -349,6 +355,7 @@ export default function TodayScreen() {
         showPredictedPhases={showPredictedPhases && predictionCount > 0}
       />
     </ScrollView>
+    </ScreenWithFlowers>
   );
 }
 
@@ -400,14 +407,11 @@ const legendStyles = StyleSheet.create({
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    container: {
+    scrollView: {
       flex: 1,
-      backgroundColor: colors.background,
     },
     content: {
       paddingHorizontal: s(16),
-      paddingTop: s(4),
-      paddingBottom: s(32),
     },
     calendarNav: {
       flexDirection: 'row',

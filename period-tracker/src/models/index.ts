@@ -128,6 +128,7 @@ export interface AppSettings {
   partnerSharingEnabled: boolean;
   theme: 'light' | 'dark' | 'system';
   colorTheme: ThemeId;
+  showFlowerDecorations: boolean;
   gdprConsentGiven: boolean;
   gdprConsentDate?: string;
   dataCategories: {
