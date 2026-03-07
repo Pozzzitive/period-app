@@ -84,6 +84,21 @@ export interface PhaseInfo {
 export type FertilityIntent = 'conceive' | 'avoid' | 'none';
 
 // ============================================================
+// Notification Types
+// ============================================================
+
+/** Time-of-day for all cycle notifications (HH:mm format, e.g. "09:00") */
+export type CycleNotificationTime = string;
+
+/** A user-configured medication reminder */
+export interface MedicationReminder {
+  id: string;
+  name: string;
+  time: string; // HH:mm
+  enabled: boolean;
+}
+
+// ============================================================
 // User Profile & Settings
 // ============================================================
 
@@ -110,9 +125,10 @@ export interface NotificationSettings {
   dailyLogReminder: boolean;    // configurable time
   dailyLogReminderTime?: string; // HH:mm
   cycleSummary: boolean;        // day after period ends
-  pillReminder: boolean;        // daily
-  pillReminderTime?: string;    // HH:mm
+  cycleNotificationTime: CycleNotificationTime; // HH:mm time for cycle notifs
+  medications: MedicationReminder[]; // multiple medication reminders
   contraceptionReminder: boolean;
+  contraceptionReminderTime?: string; // HH:mm
 }
 
 export interface AppLockSettings {
@@ -129,6 +145,8 @@ export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
   colorTheme: ThemeId;
   showFlowerDecorations: boolean;
+  predictionCount: number;
+  showPredictedPhases: boolean;
   gdprConsentGiven: boolean;
   gdprConsentDate?: string;
   dataCategories: {

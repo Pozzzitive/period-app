@@ -1,5 +1,5 @@
 import { Share } from 'react-native';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import type { PredictionResult, PhaseInfo, PartnerShareData } from '../models';
 import { PHASES } from '../constants/phases';
 
@@ -43,12 +43,12 @@ export function formatShareText(data: PartnerShareData): string {
   }
 
   if (data.nextPeriodDate) {
-    lines.push(`Next period: ${format(new Date(data.nextPeriodDate), 'MMM d')}`);
+    lines.push(`Next period: ${format(parseISO(data.nextPeriodDate), 'MMM d')}`);
   }
 
   if (data.fertileWindow) {
     lines.push(
-      `Fertile window: ${format(new Date(data.fertileWindow.start), 'MMM d')} - ${format(new Date(data.fertileWindow.end), 'MMM d')}`
+      `Fertile window: ${format(parseISO(data.fertileWindow.start), 'MMM d')} - ${format(parseISO(data.fertileWindow.end), 'MMM d')}`
     );
   }
 

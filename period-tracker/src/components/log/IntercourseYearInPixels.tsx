@@ -3,8 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { format, isSameDay } from 'date-fns';
 import { useLogStore } from '../../stores';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
-import { s, fs, SCREEN_W } from '@/src/utils/scale';
+import { s, SCREEN_W } from '@/src/utils/scale';
 
 interface IntercourseYearInPixelsProps {
   year: number;
@@ -25,7 +24,6 @@ export function IntercourseYearInPixels({ year, onSelectMonth }: IntercourseYear
   const { colors } = useTheme();
   const logs = useLogStore((s) => s.logs);
   const today = new Date();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const noDataColor = colors.surfaceTertiary;
   const protectedColor = colors.success;
@@ -66,24 +64,31 @@ export function IntercourseYearInPixels({ year, onSelectMonth }: IntercourseYear
   }, [year, logs, colors]);
 
   return (
-    <View style={styles.container}>
+    <View className="gap-1">
       {monthRows.map((row) => (
-        <View key={row.label} style={styles.monthRow}>
+        <View key={row.label} className="flex-row items-center">
           <TouchableOpacity
-            style={styles.labelContainer}
+            style={{ width: LABEL_WIDTH }}
             onPress={() => onSelectMonth(row.monthDate)}
             activeOpacity={0.6}
           >
-            <Text style={styles.monthLabel}>{row.label}</Text>
+            <Text className="text-[11px] font-bold" style={{ color: colors.primary }}>{row.label}</Text>
           </TouchableOpacity>
-          <View style={styles.pixelRow}>
+          <View style={{ flexDirection: 'row', gap: PIXEL_GAP, flexWrap: 'nowrap' }}>
             {row.days.map((day) => (
               <View
                 key={day.dateStr}
                 style={[
-                  styles.pixel,
-                  { backgroundColor: day.color },
-                  day.isToday && styles.todayPixel,
+                  {
+                    width: PIXEL_SIZE,
+                    height: PIXEL_SIZE,
+                    borderRadius: 2.5,
+                    backgroundColor: day.color,
+                  },
+                  day.isToday && {
+                    borderWidth: 1.5,
+                    borderColor: colors.primary,
+                  },
                 ]}
               />
             ))}
@@ -92,77 +97,23 @@ export function IntercourseYearInPixels({ year, onSelectMonth }: IntercourseYear
       ))}
 
       {/* Legend */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: protectedColor }]} />
-          <Text style={styles.legendText}>Protected</Text>
+      <View
+        className="flex-row justify-center gap-5 mt-5 pt-4"
+        style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderSubtle }}
+      >
+        <View className="flex-row items-center gap-1.5">
+          <View className="w-2.5 h-2.5 rounded-[2.5px]" style={{ backgroundColor: protectedColor }} />
+          <Text className="text-[11px] font-medium" style={{ color: colors.textTertiary }}>Protected</Text>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: unprotectedColor }]} />
-          <Text style={styles.legendText}>Unprotected</Text>
+        <View className="flex-row items-center gap-1.5">
+          <View className="w-2.5 h-2.5 rounded-[2.5px]" style={{ backgroundColor: unprotectedColor }} />
+          <Text className="text-[11px] font-medium" style={{ color: colors.textTertiary }}>Unprotected</Text>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: unspecifiedColor }]} />
-          <Text style={styles.legendText}>Unspecified</Text>
+        <View className="flex-row items-center gap-1.5">
+          <View className="w-2.5 h-2.5 rounded-[2.5px]" style={{ backgroundColor: unspecifiedColor }} />
+          <Text className="text-[11px] font-medium" style={{ color: colors.textTertiary }}>Unspecified</Text>
         </View>
       </View>
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    container: {
-      gap: s(4),
-    },
-    monthRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    labelContainer: {
-      width: LABEL_WIDTH,
-    },
-    monthLabel: {
-      fontSize: fs(11),
-      fontWeight: '700',
-      color: colors.primary,
-    },
-    pixelRow: {
-      flexDirection: 'row',
-      gap: PIXEL_GAP,
-      flexWrap: 'nowrap',
-    },
-    pixel: {
-      width: PIXEL_SIZE,
-      height: PIXEL_SIZE,
-      borderRadius: 2.5,
-    },
-    todayPixel: {
-      borderWidth: 1.5,
-      borderColor: colors.primary,
-    },
-    legend: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: s(20),
-      marginTop: s(20),
-      paddingTop: s(16),
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.borderSubtle,
-    },
-    legendItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: s(6),
-    },
-    legendDot: {
-      width: s(10),
-      height: s(10),
-      borderRadius: 2.5,
-    },
-    legendText: {
-      fontSize: fs(11),
-      color: colors.textTertiary,
-      fontWeight: '500',
-    },
-  });

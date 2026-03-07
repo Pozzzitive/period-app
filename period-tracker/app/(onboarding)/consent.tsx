@@ -1,26 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  Switch,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, useUserStore } from '@/src/stores';
-import { useTheme, type ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
+import { useTheme } from '@/src/theme';
+import { OnboardingProgress } from '@/src/components/common/OnboardingProgress';
 
 export default function ConsentScreen() {
   const router = useRouter();
   const setGdprConsent = useSettingsStore((s) => s.setGdprConsent);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const completeOnboarding = useUserStore((s) => s.completeOnboarding);
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, isDark } = useTheme();
 
   const [cycleData, setCycleData] = useState(true);
   const [symptoms, setSymptoms] = useState(true);
@@ -38,78 +29,88 @@ export default function ConsentScreen() {
       },
     });
     setGdprConsent(true);
+    // completeOnboarding triggers navigation via the layout guard
     completeOnboarding();
-    router.replace('/(tabs)');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Your Privacy</Text>
-        <Text style={styles.subtitle}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }} accessibilityLabel="Go back" accessibilityRole="button">
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
+        </TouchableOpacity>
+        <OnboardingProgress step={4} />
+        <Text style={{ fontSize: 28, fontWeight: 'bold', color: colors.text, marginBottom: 8 }}>Your Privacy</Text>
+        <Text style={{ fontSize: 15, color: colors.textSecondary, marginBottom: 24 }}>
           We take your privacy seriously. Please review how your data is handled.
         </Text>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>How your data is stored</Text>
-          <Text style={styles.infoText}>
+        <View style={{ backgroundColor: colors.infoLight, padding: 16, borderRadius: 12, marginBottom: 24 }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.info, marginBottom: 8 }}>How your data is stored</Text>
+          <Text style={{ fontSize: 14, color: colors.info, lineHeight: 20 }}>
             All your data stays on your device. Nothing is uploaded to any server
             unless you explicitly enable cloud backup later. We never sell your
             data, and we never will.
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Data categories</Text>
-        <Text style={styles.sectionDesc}>
+        <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 4 }}>Data categories</Text>
+        <Text style={{ fontSize: 13, color: colors.textTertiary, marginBottom: 16 }}>
           Choose which types of data you'd like to track. You can change this
           anytime in settings.
         </Text>
 
-        <View style={styles.row}>
-          <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>Cycle tracking data</Text>
-            <Text style={styles.rowDesc}>Period dates, cycle predictions, flow intensity</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 8 }}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Cycle tracking data</Text>
+            <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }}>Period dates, cycle predictions, flow intensity</Text>
           </View>
-          <Switch
-            value={cycleData}
-            onValueChange={setCycleData}
-            trackColor={{ true: colors.switchActive }}
-          />
+          <Switch value={cycleData} onValueChange={setCycleData} trackColor={{ false: colors.surfaceTertiary, true: colors.switchActive }} thumbColor={cycleData ? '#FFFFFF' : isDark ? '#9E9E9E' : '#F5F5F5'} />
+        </View>
+        {!cycleData && (
+          <Text style={{ fontSize: 13, color: colors.destructive, marginBottom: 4, marginLeft: 4 }}>
+            Required — the app cannot function without cycle data
+          </Text>
+        )}
+
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 8 }}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Symptoms & moods</Text>
+            <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }}>Physical symptoms, emotional state, notes</Text>
+          </View>
+          <Switch value={symptoms} onValueChange={setSymptoms} trackColor={{ false: colors.surfaceTertiary, true: colors.switchActive }} thumbColor={symptoms ? '#FFFFFF' : isDark ? '#9E9E9E' : '#F5F5F5'} />
         </View>
 
-        <View style={styles.row}>
-          <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>Symptoms & moods</Text>
-            <Text style={styles.rowDesc}>Physical symptoms, emotional state, notes</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 8 }}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Intercourse logs</Text>
+            <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }}>Intimate activity records</Text>
           </View>
-          <Switch
-            value={symptoms}
-            onValueChange={setSymptoms}
-            trackColor={{ true: colors.switchActive }}
-          />
-        </View>
-
-        <View style={styles.row}>
-          <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>Intercourse logs</Text>
-            <Text style={styles.rowDesc}>Intimate activity records</Text>
-          </View>
-          <Switch
-            value={intercourse}
-            onValueChange={setIntercourse}
-            trackColor={{ true: colors.switchActive }}
-          />
+          <Switch value={intercourse} onValueChange={setIntercourse} trackColor={{ false: colors.surfaceTertiary, true: colors.switchActive }} thumbColor={intercourse ? '#FFFFFF' : isDark ? '#9E9E9E' : '#F5F5F5'} />
         </View>
 
         <TouchableOpacity
-          style={styles.consentRow}
+          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 20, padding: 16, backgroundColor: colors.warningLight, borderRadius: 12 }}
           onPress={() => setUnderstood(!understood)}
           activeOpacity={0.7}
         >
-          <View style={[styles.checkbox, understood && styles.checkboxChecked]}>
-            {understood && <Ionicons name="checkmark" size={s(16)} color={colors.onPrimary} />}
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              borderWidth: 2,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginTop: 2,
+              backgroundColor: understood ? colors.primary : 'transparent',
+              borderColor: understood ? colors.primary : colors.textDisabled,
+            }}
+          >
+            {understood && <Ionicons name="checkmark" size={16} color={colors.onPrimary} />}
           </View>
-          <Text style={styles.consentText}>
+          <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>
             I understand that my health data is stored locally on my device and
             I consent to the app processing this data to provide cycle tracking
             and predictions.
@@ -118,130 +119,19 @@ export default function ConsentScreen() {
       </ScrollView>
 
       <TouchableOpacity
-        style={[styles.button, !canContinue && styles.buttonDisabled]}
+        style={{
+          backgroundColor: colors.primary,
+          paddingVertical: 16,
+          borderRadius: 12,
+          alignItems: 'center',
+          marginBottom: 16,
+          opacity: !canContinue ? 0.5 : 1,
+        }}
         onPress={handleComplete}
         disabled={!canContinue}
       >
-        <Text style={styles.buttonText}>Start Tracking</Text>
+        <Text style={{ color: colors.onPrimary, fontSize: 18, fontWeight: '600' }}>Start Tracking</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
-
-const createStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: s(24),
-  },
-  content: {
-    paddingTop: s(40),
-    paddingBottom: s(24),
-  },
-  title: {
-    fontSize: fs(28),
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: s(8),
-  },
-  subtitle: {
-    fontSize: fs(15),
-    color: colors.textSecondary,
-    marginBottom: s(24),
-  },
-  infoBox: {
-    backgroundColor: colors.infoLight,
-    padding: s(16),
-    borderRadius: s(12),
-    marginBottom: s(24),
-  },
-  infoTitle: {
-    fontSize: fs(16),
-    fontWeight: '600',
-    color: colors.info,
-    marginBottom: s(8),
-  },
-  infoText: {
-    fontSize: fs(14),
-    color: colors.info,
-    lineHeight: fs(20),
-  },
-  sectionTitle: {
-    fontSize: fs(18),
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: s(4),
-  },
-  sectionDesc: {
-    fontSize: fs(13),
-    color: colors.textTertiary,
-    marginBottom: s(16),
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: s(16),
-    borderRadius: s(12),
-    marginBottom: s(8),
-  },
-  rowText: {
-    flex: 1,
-    marginRight: s(12),
-  },
-  rowLabel: {
-    fontSize: fs(16),
-    fontWeight: '600',
-    color: colors.text,
-  },
-  rowDesc: {
-    fontSize: fs(13),
-    color: colors.textTertiary,
-    marginTop: s(2),
-  },
-  consentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: s(12),
-    marginTop: s(20),
-    padding: s(16),
-    backgroundColor: colors.warningLight,
-    borderRadius: s(12),
-  },
-  checkbox: {
-    width: s(24),
-    height: s(24),
-    borderRadius: s(6),
-    borderWidth: 2,
-    borderColor: colors.textDisabled,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  consentText: {
-    flex: 1,
-    fontSize: fs(14),
-    color: colors.text,
-    lineHeight: fs(20),
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: s(16),
-    borderRadius: s(12),
-    alignItems: 'center',
-    marginBottom: s(16),
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.onPrimary,
-    fontSize: fs(18),
-    fontWeight: '600',
-  },
-});

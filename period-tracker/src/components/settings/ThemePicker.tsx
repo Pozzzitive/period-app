@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, THEME_LIST } from '../../theme';
-import type { ThemeColors, ThemeDefinition } from '../../theme';
-import { s, fs } from '@/src/utils/scale';
+import type { ThemeDefinition } from '../../theme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -12,7 +11,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export function ThemePicker() {
   const { colors, themeId, setThemeId } = useTheme();
   const [expanded, setExpanded] = useState(false);
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const currentTheme = THEME_LIST.find((t) => t.id === themeId) ?? THEME_LIST[0];
 
@@ -30,49 +28,49 @@ export function ThemePicker() {
   return (
     <View>
       {/* Current theme header — tap to expand */}
-      <TouchableOpacity style={styles.header} onPress={handleToggle} activeOpacity={0.6}>
-        <View style={styles.previewBar}>
+      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={handleToggle} activeOpacity={0.6}>
+        <View className="flex-row w-12 h-7 rounded-lg overflow-hidden">
           {currentTheme.preview.map((color, i) => (
-            <View key={i} style={[styles.previewSegment, { backgroundColor: color }]} />
+            <View key={i} className="flex-1" style={{ backgroundColor: color }} />
           ))}
         </View>
-        <View style={styles.headerText}>
-          <Text style={styles.headerName}>{currentTheme.name}</Text>
-          <Text style={styles.headerHint}>Tap to {expanded ? 'close' : 'change'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{currentTheme.name}</Text>
+          <Text style={{ fontSize: 12, marginTop: 1, color: colors.textMuted }}>Tap to {expanded ? 'close' : 'change'}</Text>
         </View>
         <Ionicons
           name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={s(18)}
+          size={18}
           color={colors.textMuted}
         />
       </TouchableOpacity>
 
       {/* Expanded list */}
       {expanded && (
-        <View style={styles.list}>
+        <View className="mt-3 gap-1">
           {THEME_LIST.map((theme) => {
             const isActive = themeId === theme.id;
             return (
               <TouchableOpacity
                 key={theme.id}
-                style={[styles.row, isActive && styles.rowActive]}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 10, borderRadius: 10, gap: 12, backgroundColor: isActive ? colors.primaryMuted : undefined }}
                 onPress={() => handleSelect(theme)}
                 activeOpacity={0.6}
               >
-                <View style={styles.rowPreviewBar}>
+                <View className="flex-row w-9 h-[22px] rounded-[6px] overflow-hidden">
                   {theme.preview.map((color, i) => (
-                    <View key={i} style={[styles.rowPreviewSegment, { backgroundColor: color }]} />
+                    <View key={i} className="flex-1" style={{ backgroundColor: color }} />
                   ))}
                 </View>
-                <Text style={[styles.rowName, isActive && styles.rowNameActive]}>
+                <Text style={{ flex: 1, fontSize: 14, color: isActive ? colors.primary : colors.textSecondary, fontWeight: isActive ? '700' : '500' }}>
                   {theme.name}
                 </Text>
                 {theme.isPremium && !isActive && (
-                  <Ionicons name="lock-closed" size={s(12)} color={colors.textMuted} style={styles.lockIcon} />
+                  <Ionicons name="lock-closed" size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
                 )}
                 {isActive && (
-                  <View style={styles.checkmark}>
-                    <Ionicons name="checkmark" size={s(14)} color={colors.onPrimary} />
+                  <View className="w-[22px] h-[22px] rounded-full items-center justify-center" style={{ backgroundColor: colors.primary }}>
+                    <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -83,81 +81,3 @@ export function ThemePicker() {
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: s(12),
-    },
-    previewBar: {
-      flexDirection: 'row',
-      width: s(48),
-      height: s(28),
-      borderRadius: s(8),
-      overflow: 'hidden',
-    },
-    previewSegment: {
-      flex: 1,
-    },
-    headerText: {
-      flex: 1,
-    },
-    headerName: {
-      fontSize: fs(15),
-      fontWeight: '600',
-      color: colors.text,
-    },
-    headerHint: {
-      fontSize: fs(12),
-      color: colors.textMuted,
-      marginTop: s(1),
-    },
-    list: {
-      marginTop: s(12),
-      gap: s(4),
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: s(10),
-      paddingHorizontal: s(10),
-      borderRadius: s(10),
-      gap: s(12),
-    },
-    rowActive: {
-      backgroundColor: colors.primaryMuted,
-    },
-    rowPreviewBar: {
-      flexDirection: 'row',
-      width: s(36),
-      height: s(22),
-      borderRadius: s(6),
-      overflow: 'hidden',
-    },
-    rowPreviewSegment: {
-      flex: 1,
-    },
-    rowName: {
-      flex: 1,
-      fontSize: fs(14),
-      fontWeight: '500',
-      color: colors.textSecondary,
-    },
-    rowNameActive: {
-      color: colors.primary,
-      fontWeight: '700',
-    },
-    lockIcon: {
-      marginRight: s(4),
-    },
-    checkmark: {
-      width: s(22),
-      height: s(22),
-      borderRadius: s(11),
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-  });

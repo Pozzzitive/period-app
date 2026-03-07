@@ -1,10 +1,8 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text } from 'react-native';
 import { PHASES } from '../../constants/phases';
 import type { PhaseInfo } from '../../models';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
-import { s, fs } from '../../utils/scale';
 
 interface PhaseCardProps {
   phase: PhaseInfo | null;
@@ -12,13 +10,12 @@ interface PhaseCardProps {
 
 export function PhaseCard({ phase }: PhaseCardProps) {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   if (!phase) {
     return (
-      <View style={[styles.card, { backgroundColor: colors.surfaceTertiary }]}>
-        <Text style={styles.title}>Welcome!</Text>
-        <Text style={styles.description}>
+      <View className="p-5 rounded-2xl mb-4" style={{ backgroundColor: colors.surfaceTertiary }}>
+        <Text className="text-xl font-bold mb-2" style={{ color: colors.text }}>Welcome!</Text>
+        <Text className="text-sm leading-5" style={{ color: colors.textSecondary }}>
           Start logging your periods to see your cycle phases here.
         </Text>
       </View>
@@ -29,64 +26,17 @@ export function PhaseCard({ phase }: PhaseCardProps) {
   const themePhase = colors.phases[phase.phase];
 
   return (
-    <View style={[styles.card, { backgroundColor: themePhase.lightColor }]}>
-      <View style={styles.header}>
-        <View style={[styles.phaseBadge, { backgroundColor: themePhase.color }]}>
-          <Text style={styles.badgeText}>{phaseInfo.label}</Text>
+    <View className="p-5 rounded-2xl mb-4" style={{ backgroundColor: themePhase.lightColor }}>
+      <View className="flex-row justify-between items-center mb-3">
+        <View className="px-3 py-1.5 rounded-[20px]" style={{ backgroundColor: themePhase.color }}>
+          <Text className="text-[13px] font-semibold" style={{ color: colors.onPrimary }}>{phaseInfo.label}</Text>
         </View>
-        <Text style={styles.dayCount}>
+        <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>
           Day {phase.dayInCycle} of {phase.cycleLength}
         </Text>
       </View>
-      <Text style={styles.description}>{phaseInfo.description}</Text>
-      <Text style={styles.tip}>{phaseInfo.tips}</Text>
+      <Text className="text-sm leading-5 mb-2" style={{ color: colors.textSecondary }}>{phaseInfo.description}</Text>
+      <Text className="text-[13px] italic" style={{ color: colors.textTertiary }}>{phaseInfo.tips}</Text>
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      padding: s(20),
-      borderRadius: s(16),
-      marginBottom: s(16),
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: s(12),
-    },
-    phaseBadge: {
-      paddingHorizontal: s(12),
-      paddingVertical: s(6),
-      borderRadius: s(20),
-    },
-    badgeText: {
-      color: colors.onPrimary,
-      fontSize: fs(13),
-      fontWeight: '600',
-    },
-    dayCount: {
-      fontSize: fs(14),
-      color: colors.textSecondary,
-      fontWeight: '500',
-    },
-    title: {
-      fontSize: fs(20),
-      fontWeight: 'bold',
-      color: colors.text,
-      marginBottom: s(8),
-    },
-    description: {
-      fontSize: fs(14),
-      color: colors.textSecondary,
-      lineHeight: fs(20),
-      marginBottom: s(8),
-    },
-    tip: {
-      fontSize: fs(13),
-      color: colors.textTertiary,
-      fontStyle: 'italic',
-    },
-  });

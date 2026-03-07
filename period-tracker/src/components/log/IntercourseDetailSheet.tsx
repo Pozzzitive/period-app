@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   Modal,
   View,
@@ -11,34 +11,26 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogStore } from '../../stores';
 import { formatDate } from '../../utils/dates';
 import { pickPhoto, takePhoto, deletePhoto } from '../../utils/photos';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
 import type { IntercourseEntry } from '../../models';
-import { s, fs } from '@/src/utils/scale';
 
 interface IntercourseDetailSheetProps {
   visible: boolean;
   date: string;
   onClose: () => void;
+  onAdd?: () => void;
 }
 
-function EntryEditor({
-  entry,
-  date,
-  colors,
-  styles,
-}: {
-  entry: IntercourseEntry;
-  date: string;
-  colors: ThemeColors;
-  styles: ReturnType<typeof createStyles>;
-}) {
+function EntryEditor({ entry, date }: { entry: IntercourseEntry; date: string }) {
+  const { colors } = useTheme();
   const updateEntry = useLogStore((s) => s.updateIntercourseEntry);
   const removeEntry = useLogStore((s) => s.removeIntercourseEntry);
+  const [localNotes, setLocalNotes] = React.useState(entry.notes ?? '');
 
   const handleDelete = () => {
     Alert.alert('Delete entry', 'Remove this entry?', [
@@ -95,24 +87,30 @@ function EntryEditor({
   });
 
   return (
-    <View style={styles.entryCard}>
+    <View
+      className="rounded-[14px] p-3.5 mb-3"
+      style={{ backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border }}
+    >
       {/* Header row with time + delete */}
-      <View style={styles.entryHeaderRow}>
-        <View style={styles.entryHeaderLeft}>
-          <Ionicons name="heart" size={s(16)} color={colors.primary} />
-          <Text style={styles.entryTime}>{time}</Text>
+      <View className="flex-row justify-between items-center mb-2.5">
+        <View className="flex-row items-center gap-1.5">
+          <Ionicons name="heart" size={16} color={colors.primary} />
+          <Text className="text-[13px] font-semibold" style={{ color: colors.text }}>{time}</Text>
         </View>
         <TouchableOpacity onPress={handleDelete} hitSlop={8}>
-          <Ionicons name="trash-outline" size={s(16)} color={colors.destructive} />
+          <Ionicons name="trash-outline" size={16} color={colors.destructive} />
         </TouchableOpacity>
       </View>
 
       {/* Protection toggle */}
-      <View style={styles.protectionRow}>
+      <View className="flex-row gap-2 mb-2.5">
         <TouchableOpacity
+          className="flex-1 flex-row items-center justify-center gap-[5px] py-2 rounded-[10px] border-[1.5px] border-transparent"
           style={[
-            styles.protectionButton,
-            entry.protected === true && styles.protectionActive,
+            { backgroundColor: colors.surfaceTertiary },
+            entry.protected === true
+              ? { backgroundColor: colors.successLight, borderColor: colors.success }
+              : undefined,
           ]}
           onPress={() =>
             updateEntry(date, entry.id, {
@@ -123,22 +121,23 @@ function EntryEditor({
         >
           <Ionicons
             name="shield-checkmark"
-            size={s(14)}
+            size={14}
             color={entry.protected === true ? colors.success : colors.textMuted}
           />
           <Text
-            style={[
-              styles.protectionText,
-              entry.protected === true && styles.protectionTextActive,
-            ]}
+            className="text-[12px] font-semibold"
+            style={{ color: entry.protected === true ? colors.success : colors.textSecondary }}
           >
             Protected
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          className="flex-1 flex-row items-center justify-center gap-[5px] py-2 rounded-[10px] border-[1.5px] border-transparent"
           style={[
-            styles.protectionButton,
-            entry.protected === false && styles.protectionUnprotected,
+            { backgroundColor: colors.surfaceTertiary },
+            entry.protected === false
+              ? { backgroundColor: colors.destructiveLight, borderColor: colors.destructive }
+              : undefined,
           ]}
           onPress={() =>
             updateEntry(date, entry.id, {
@@ -149,14 +148,12 @@ function EntryEditor({
         >
           <Ionicons
             name="shield-outline"
-            size={s(14)}
+            size={14}
             color={entry.protected === false ? colors.destructive : colors.textMuted}
           />
           <Text
-            style={[
-              styles.protectionText,
-              entry.protected === false && styles.protectionTextUnprotected,
-            ]}
+            className="text-[12px] font-semibold"
+            style={{ color: entry.protected === false ? colors.destructive : colors.textSecondary }}
           >
             Unprotected
           </Text>
@@ -165,63 +162,85 @@ function EntryEditor({
 
       {/* Notes */}
       <TextInput
-        style={styles.notesInput}
+        style={{
+          backgroundColor: colors.surfaceTertiary,
+          padding: 10,
+          borderRadius: 8,
+          minHeight: 40,
+          fontSize: 13,
+          color: colors.text,
+          marginBottom: 8,
+          textAlignVertical: 'top',
+        }}
         placeholder="Add notes..."
         placeholderTextColor={colors.textMuted}
         multiline
-        value={entry.notes ?? ''}
-        onChangeText={(text) =>
-          updateEntry(date, entry.id, { notes: text || undefined })
-        }
+        value={localNotes}
+        onChangeText={setLocalNotes}
+        onBlur={() => updateEntry(date, entry.id, { notes: localNotes || undefined })}
       />
 
       {/* Photos */}
-      {((entry.photos && entry.photos.length > 0) || true) && (
-        <View style={styles.photoRow}>
-          {(entry.photos ?? []).map((uri, i) => (
-            <View key={i} style={styles.photoContainer}>
-              <Image source={{ uri }} style={styles.photoThumb} />
-              <TouchableOpacity
-                style={styles.photoRemove}
-                onPress={() => handleRemovePhoto(uri)}
-              >
-                <Ionicons name="close-circle" size={s(18)} color={colors.destructive} />
-              </TouchableOpacity>
-            </View>
-          ))}
-          <TouchableOpacity style={styles.photoAdd} onPress={handleAddPhoto}>
-            <Ionicons name="camera-outline" size={s(20)} color={colors.textMuted} />
-          </TouchableOpacity>
-        </View>
-      )}
+      <View className="flex-row flex-wrap gap-1.5">
+        {(entry.photos ?? []).map((uri, i) => (
+          <View key={i} className="relative">
+            <Image source={{ uri }} className="w-12 h-12 rounded-lg" style={{ backgroundColor: colors.surfaceTertiary }} />
+            <TouchableOpacity
+              className="absolute -top-[5px] -right-[5px] rounded-[9px]"
+              style={{ backgroundColor: colors.surface }}
+              onPress={() => handleRemovePhoto(uri)}
+            >
+              <Ionicons name="close-circle" size={18} color={colors.destructive} />
+            </TouchableOpacity>
+          </View>
+        ))}
+        <TouchableOpacity
+          className="w-12 h-12 rounded-lg border-[1.5px] border-dashed justify-center items-center"
+          style={{ backgroundColor: colors.surfaceTertiary, borderColor: colors.border }}
+          onPress={handleAddPhoto}
+        >
+          <Ionicons name="camera-outline" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-export function IntercourseDetailSheet({ visible, date, onClose }: IntercourseDetailSheetProps) {
+export function IntercourseDetailSheet({ visible, date, onClose, onAdd }: IntercourseDetailSheetProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const entries = useLogStore((s) => s.logs[date]?.intercourse);
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop} />
+        <View className="flex-1" style={{ backgroundColor: colors.backdrop }} />
       </TouchableWithoutFeedback>
 
-      <View style={styles.sheet}>
-        <View style={styles.handle} />
+      <View
+        className="rounded-t-3xl"
+        style={{ backgroundColor: colors.sheetBackground, maxHeight: '80%', paddingBottom: Math.max(insets.bottom, 10) + 14 }}
+      >
+        <View
+          className="w-9 h-1 rounded-sm self-center mt-2.5 mb-0.5"
+          style={{ backgroundColor: colors.handleColor }}
+        />
 
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerDate}>{formatDate(date, 'EEEE, MMM d')}</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={s(18)} color={colors.textMuted} />
+        <View
+          className="flex-row justify-between items-center px-5 pt-2 pb-3"
+          style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderSubtle }}
+        >
+          <Text className="text-lg font-semibold" style={{ color: colors.text }}>
+            {formatDate(date, 'EEEE, MMM d')}
+          </Text>
+          <TouchableOpacity onPress={onClose} className="p-2 min-w-[36px] min-h-[36px] items-center justify-center rounded-[18px]" style={{ backgroundColor: colors.surfaceTertiary }}>
+            <Ionicons name="close" size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         <ScrollView
-          style={styles.content}
+          className="px-5 pt-3"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -231,180 +250,29 @@ export function IntercourseDetailSheet({ visible, date, onClose }: IntercourseDe
                 key={entry.id}
                 entry={entry}
                 date={date}
-                colors={colors}
-                styles={styles}
               />
             ))
           ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No entries for this day</Text>
+            <View className="py-8 items-center">
+              <Text className="text-[15px] italic" style={{ color: colors.textMuted }}>
+                No entries for this day
+              </Text>
             </View>
+          )}
+
+          {onAdd && (
+            <TouchableOpacity
+              className="flex-row items-center justify-center gap-1.5 py-3 rounded-xl mb-4"
+              style={{ backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.primaryLight }}
+              onPress={onAdd}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={18} color={colors.primary} />
+              <Text className="text-sm font-bold" style={{ color: colors.primary }}>Add entry</Text>
+            </TouchableOpacity>
           )}
         </ScrollView>
       </View>
     </Modal>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    backdrop: {
-      flex: 1,
-      backgroundColor: colors.backdrop,
-    },
-    sheet: {
-      backgroundColor: colors.sheetBackground,
-      borderTopLeftRadius: s(24),
-      borderTopRightRadius: s(24),
-      paddingBottom: s(34),
-      maxHeight: '80%',
-    },
-    handle: {
-      width: s(36),
-      height: s(4),
-      borderRadius: 2,
-      backgroundColor: colors.handleColor,
-      alignSelf: 'center',
-      marginTop: s(10),
-      marginBottom: s(2),
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: s(20),
-      paddingTop: s(8),
-      paddingBottom: s(12),
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.borderSubtle,
-    },
-    headerDate: {
-      fontSize: fs(18),
-      fontWeight: '600',
-      color: colors.text,
-    },
-    closeButton: {
-      padding: s(8),
-      minWidth: s(36),
-      minHeight: s(36),
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: s(18),
-      backgroundColor: colors.surfaceTertiary,
-    },
-    content: {
-      paddingHorizontal: s(20),
-      paddingTop: s(12),
-    },
-    entryCard: {
-      backgroundColor: colors.surface,
-      borderRadius: s(14),
-      padding: s(14),
-      marginBottom: s(12),
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-    },
-    entryHeaderRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: s(10),
-    },
-    entryHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: s(6),
-    },
-    entryTime: {
-      fontSize: fs(13),
-      fontWeight: '600',
-      color: colors.text,
-    },
-    protectionRow: {
-      flexDirection: 'row',
-      gap: s(8),
-      marginBottom: s(10),
-    },
-    protectionButton: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: s(5),
-      paddingVertical: s(8),
-      borderRadius: s(10),
-      backgroundColor: colors.surfaceTertiary,
-      borderWidth: 1.5,
-      borderColor: 'transparent',
-    },
-    protectionActive: {
-      backgroundColor: colors.successLight,
-      borderColor: colors.success,
-    },
-    protectionUnprotected: {
-      backgroundColor: colors.destructiveLight,
-      borderColor: colors.destructive,
-    },
-    protectionText: {
-      fontSize: fs(12),
-      fontWeight: '600',
-      color: colors.textSecondary,
-    },
-    protectionTextActive: {
-      color: colors.success,
-    },
-    protectionTextUnprotected: {
-      color: colors.destructive,
-    },
-    notesInput: {
-      backgroundColor: colors.surfaceTertiary,
-      padding: s(10),
-      borderRadius: s(8),
-      minHeight: s(40),
-      fontSize: fs(13),
-      color: colors.text,
-      textAlignVertical: 'top',
-      marginBottom: s(8),
-    },
-    photoRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: s(6),
-    },
-    photoContainer: {
-      position: 'relative',
-    },
-    photoThumb: {
-      width: s(48),
-      height: s(48),
-      borderRadius: s(8),
-      backgroundColor: colors.surfaceTertiary,
-    },
-    photoRemove: {
-      position: 'absolute',
-      top: s(-5),
-      right: s(-5),
-      backgroundColor: colors.surface,
-      borderRadius: s(9),
-    },
-    photoAdd: {
-      width: s(48),
-      height: s(48),
-      borderRadius: s(8),
-      backgroundColor: colors.surfaceTertiary,
-      borderWidth: 1.5,
-      borderColor: colors.border,
-      borderStyle: 'dashed',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    emptyState: {
-      paddingVertical: s(32),
-      alignItems: 'center',
-    },
-    emptyText: {
-      fontSize: fs(15),
-      color: colors.textMuted,
-      fontStyle: 'italic',
-    },
-  });

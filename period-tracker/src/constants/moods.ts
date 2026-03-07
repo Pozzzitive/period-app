@@ -7,7 +7,7 @@ export interface MoodDefinition {
 export const MOODS: MoodDefinition[] = [
   { id: 'happy', label: 'Happy', icon: '😊' },
   { id: 'calm', label: 'Calm', icon: '😌' },
-  { id: 'energetic', label: 'Energetic', icon: '⚡' },
+  { id: 'energetic', label: 'Energetic', icon: '✨' },
   { id: 'sad', label: 'Sad', icon: '😢' },
   { id: 'anxious', label: 'Anxious', icon: '😰' },
   { id: 'irritable', label: 'Irritable', icon: '😤' },
@@ -19,6 +19,6 @@ export const MOODS: MoodDefinition[] = [
   { id: 'emotional', label: 'Emotional', icon: '💝' },
 ];
 
-export const MOODS_BY_ID = Object.fromEntries(
+export const MOODS_BY_ID: Record<string, MoodDefinition | undefined> = Object.fromEntries(
   MOODS.map((m) => [m.id, m])
-) as Record<string, MoodDefinition>;
+);

@@ -1,11 +1,9 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text } from 'react-native';
 import type { PredictionResult } from '../../models';
 import { formatDate } from '../../utils/dates';
 import { differenceInDays, parseISO } from 'date-fns';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
-import { s, fs } from '../../utils/scale';
 
 interface PredictionCardProps {
   prediction: PredictionResult | null;
@@ -20,13 +18,12 @@ const CONFIDENCE_LABELS = {
 
 export function PredictionCard({ prediction }: PredictionCardProps) {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   if (!prediction) {
     return (
-      <View style={styles.card}>
-        <Text style={styles.title}>Next Period</Text>
-        <Text style={styles.emptyText}>
+      <View className="p-5 rounded-2xl mb-4" style={{ backgroundColor: colors.surface, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+        <Text className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: colors.textTertiary }}>Next Period</Text>
+        <Text className="text-[15px] mt-2" style={{ color: colors.textMuted }}>
           Log your first period to see predictions here.
         </Text>
       </View>
@@ -37,6 +34,7 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
   const nextStart = parseISO(prediction.nextPeriodStart);
   const daysUntil = differenceInDays(nextStart, today);
 
+  const absDays = Math.abs(daysUntil);
   const daysText =
     daysUntil === 0
       ? 'Today'
@@ -44,7 +42,9 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
       ? 'Tomorrow'
       : daysUntil > 0
       ? `In ${daysUntil} days`
-      : `${Math.abs(daysUntil)} days ago`;
+      : absDays <= 14
+      ? `${absDays} ${absDays === 1 ? 'day' : 'days'} past expected date`
+      : 'Expected date has passed';
 
   const confidenceColorMap = {
     learning: colors.confidenceLearning,
@@ -54,111 +54,35 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
   };
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Next Period</Text>
-      <Text style={styles.daysText}>{daysText}</Text>
-      <Text style={styles.dateText}>
+    <View className="p-5 rounded-2xl mb-4" style={{ backgroundColor: colors.surface, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+      <Text className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: colors.textTertiary }}>Next Period</Text>
+      <Text className="text-[28px] font-bold mb-1" style={{ color: colors.primary }}>{daysText}</Text>
+      <Text className="text-base mb-4" style={{ color: colors.textSecondary }}>
         {formatDate(prediction.nextPeriodStart, 'EEEE, MMM d')}
       </Text>
 
-      <View style={styles.details}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Cycle length</Text>
-          <Text style={styles.detailValue}>{prediction.predictedCycleLength} days</Text>
+      <View className="pt-3 gap-2" style={{ borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+        <View className="flex-row justify-between">
+          <Text className="text-sm" style={{ color: colors.textTertiary }}>Cycle length</Text>
+          <Text className="text-sm font-semibold" style={{ color: colors.text }}>{prediction.predictedCycleLength} days</Text>
         </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Period length</Text>
-          <Text style={styles.detailValue}>{prediction.predictedPeriodLength} days</Text>
+        <View className="flex-row justify-between">
+          <Text className="text-sm" style={{ color: colors.textTertiary }}>Period length</Text>
+          <Text className="text-sm font-semibold" style={{ color: colors.text }}>{prediction.predictedPeriodLength} days</Text>
         </View>
       </View>
 
-      <View style={[styles.confidenceBadge, { backgroundColor: confidenceColorMap[prediction.confidence] }]}>
-        <Text style={styles.confidenceText}>
+      <View className="self-start px-2.5 py-1 rounded-xl mt-3" style={{ backgroundColor: confidenceColorMap[prediction.confidence] }}>
+        <Text className="text-[12px] font-medium" style={{ color: colors.textSecondary }}>
           {CONFIDENCE_LABELS[prediction.confidence]}
         </Text>
       </View>
 
       {prediction.isIrregular && prediction.windowDays && (
-        <Text style={styles.irregularNote}>
+        <Text className="text-[13px] italic mt-2" style={{ color: colors.textTertiary }}>
           Your cycles vary, so the prediction has a ±{prediction.windowDays} day window.
         </Text>
       )}
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      padding: s(20),
-      borderRadius: s(16),
-      marginBottom: s(16),
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: s(2) },
-      shadowOpacity: 0.05,
-      shadowRadius: s(8),
-      elevation: 2,
-    },
-    title: {
-      fontSize: fs(14),
-      fontWeight: '600',
-      color: colors.textTertiary,
-      textTransform: 'uppercase',
-      letterSpacing: fs(1),
-      marginBottom: s(8),
-    },
-    daysText: {
-      fontSize: fs(28),
-      fontWeight: 'bold',
-      color: colors.primary,
-      marginBottom: s(4),
-    },
-    dateText: {
-      fontSize: fs(16),
-      color: colors.textSecondary,
-      marginBottom: s(16),
-    },
-    emptyText: {
-      fontSize: fs(15),
-      color: colors.textMuted,
-      marginTop: s(8),
-    },
-    details: {
-      borderTopWidth: 1,
-      borderTopColor: colors.borderLight,
-      paddingTop: s(12),
-      gap: s(8),
-    },
-    detailRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-    },
-    detailLabel: {
-      fontSize: fs(14),
-      color: colors.textTertiary,
-    },
-    detailValue: {
-      fontSize: fs(14),
-      fontWeight: '600',
-      color: colors.text,
-    },
-    confidenceBadge: {
-      alignSelf: 'flex-start',
-      paddingHorizontal: s(10),
-      paddingVertical: s(4),
-      borderRadius: s(12),
-      marginTop: s(12),
-    },
-    confidenceText: {
-      fontSize: fs(12),
-      fontWeight: '500',
-      color: colors.textSecondary,
-    },
-    irregularNote: {
-      fontSize: fs(13),
-      color: colors.textTertiary,
-      fontStyle: 'italic',
-      marginTop: s(8),
-    },
-  });

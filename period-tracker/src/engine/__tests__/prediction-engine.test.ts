@@ -6,6 +6,7 @@ import {
   predictMultiplePeriods,
   shouldShowMissingPeriodPrompt,
 } from '../prediction-engine';
+import { parseISO } from 'date-fns';
 import type { Cycle } from '../../models';
 
 describe('weightedAverage', () => {
@@ -51,7 +52,8 @@ describe('standardDeviation', () => {
 
   it('calculates correctly for varied values', () => {
     const sd = standardDeviation([26, 28, 30]);
-    expect(sd).toBeCloseTo(1.633, 2);
+    // Sample stddev (n-1): sqrt(((26-28)²+(28-28)²+(30-28)²)/(3-1)) = sqrt(8/2) = 2.0
+    expect(sd).toBeCloseTo(2.0, 2);
   });
 
   it('detects irregular cycles', () => {
@@ -196,6 +198,9 @@ describe('shouldShowMissingPeriodPrompt', () => {
 });
 
 describe('predictMultiplePeriods', () => {
+  // Use a fixed reference date so predictions aren't skipped as "past"
+  const ref = parseISO('2026-01-01');
+
   it('returns empty array for 0 count', () => {
     const cycles: Cycle[] = [
       { id: 'c1', startDate: '2026-01-01', periodLength: 5 },
@@ -211,7 +216,7 @@ describe('predictMultiplePeriods', () => {
     const cycles: Cycle[] = [
       { id: 'c1', startDate: '2026-01-01', periodLength: 5 },
     ];
-    const result = predictMultiplePeriods(cycles, 3, 28, 5);
+    const result = predictMultiplePeriods(cycles, 3, 28, 5, ref);
     expect(result).toHaveLength(3);
     expect(result[0].cycleNumber).toBe(1);
     expect(result[1].cycleNumber).toBe(2);
@@ -222,7 +227,7 @@ describe('predictMultiplePeriods', () => {
     const cycles: Cycle[] = [
       { id: 'c1', startDate: '2026-01-01', periodLength: 5 },
     ];
-    const result = predictMultiplePeriods(cycles, 3, 28, 5);
+    const result = predictMultiplePeriods(cycles, 3, 28, 5, ref);
     // First prediction: Jan 1 + 28 = Jan 29
     expect(result[0].startDate).toBe('2026-01-29');
     // Second: Jan 29 + 28 = Feb 26
@@ -235,7 +240,7 @@ describe('predictMultiplePeriods', () => {
     const cycles: Cycle[] = [
       { id: 'c1', startDate: '2026-01-01', periodLength: 5 },
     ];
-    const result = predictMultiplePeriods(cycles, 2, 28, 5);
+    const result = predictMultiplePeriods(cycles, 2, 28, 5, ref);
     // Start Jan 29, end Jan 29 + 4 = Feb 2
     expect(result[0].startDate).toBe('2026-01-29');
     expect(result[0].endDate).toBe('2026-02-02');
@@ -249,7 +254,8 @@ describe('predictMultiplePeriods', () => {
       { id: 'c2', startDate: '2025-10-31', endDate: '2025-11-30', periodLength: 5, cycleLength: 30 },
       { id: 'c3', startDate: '2025-11-30', periodLength: 5 },
     ];
-    const result = predictMultiplePeriods(cycles, 2);
+    const refDate = parseISO('2025-11-30');
+    const result = predictMultiplePeriods(cycles, 2, 28, 5, refDate);
     // Weighted average of [30, 30] = 30
     expect(result[0].startDate).toBe('2025-12-30');
     expect(result[1].startDate).toBe('2026-01-29');
@@ -259,7 +265,7 @@ describe('predictMultiplePeriods', () => {
     const cycles: Cycle[] = [
       { id: 'c1', startDate: '2026-01-01', periodLength: 5 },
     ];
-    const result = predictMultiplePeriods(cycles, 1, 28, 5);
+    const result = predictMultiplePeriods(cycles, 1, 28, 5, ref);
     expect(result).toHaveLength(1);
     expect(result[0].cycleNumber).toBe(1);
   });
@@ -268,10 +274,34 @@ describe('predictMultiplePeriods', () => {
     const cycles: Cycle[] = [
       { id: 'c1', startDate: '2026-01-01', periodLength: 4 },
     ];
-    const result = predictMultiplePeriods(cycles, 2, 30, 4);
+    const result = predictMultiplePeriods(cycles, 2, 30, 4, ref);
     for (const p of result) {
       expect(p.cycleLength).toBe(30);
       expect(p.periodLength).toBe(4);
     }
+  });
+
+  it('skips past predictions and returns future ones', () => {
+    const cycles: Cycle[] = [
+      { id: 'c1', startDate: '2025-06-01', periodLength: 5 },
+    ];
+    // Reference date far in the future — should skip many cycles
+    const futureRef = parseISO('2026-03-01');
+    const result = predictMultiplePeriods(cycles, 2, 28, 5, futureRef);
+    expect(result).toHaveLength(2);
+    // All predictions should be on or after the reference date
+    expect(result[0].startDate >= '2026-03-01').toBe(true);
+    expect(result[1].startDate > result[0].startDate).toBe(true);
+  });
+
+  it('ignores implausibly short cycles and falls back to typical length', () => {
+    const cycles: Cycle[] = [
+      { id: 'c1', startDate: '2026-01-01', endDate: '2026-01-03', periodLength: 2, cycleLength: 2 },
+      { id: 'c2', startDate: '2026-01-03', periodLength: 2 },
+    ];
+    const result = predictMultiplePeriods(cycles, 2, 28, 5, ref);
+    // cycleLength 2 is below MIN_CYCLE_LENGTH and gets filtered out;
+    // falls back to typicalCycleLength (28)
+    expect(result[0].cycleLength).toBe(28);
   });
 });

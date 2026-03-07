@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import {
   startOfMonth,
   endOfMonth,
@@ -9,12 +9,14 @@ import {
   format,
   isSameMonth,
   isSameDay,
+  parseISO,
+  isWithinInterval,
 } from 'date-fns';
-import { useLogStore } from '../../stores';
+import { useLogStore, useCycleStore, useUserStore, useSettingsStore } from '../../stores';
+import { calculateFertilityWindow } from '../../engine';
+import { MIN_CYCLE_LENGTH } from '../../constants/phases';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
 import type { IntercourseEntry } from '../../models';
-import { s, fs } from '@/src/utils/scale';
 
 interface IntercourseCalendarGridProps {
   month: Date;
@@ -36,8 +38,34 @@ function getHeartColor(entries: IntercourseEntry[], colors: { success: string; d
 export function IntercourseCalendarGrid({ month, onSelectDay }: IntercourseCalendarGridProps) {
   const { colors } = useTheme();
   const logs = useLogStore((s) => s.logs);
+  const cycles = useCycleStore((s) => s.cycles);
+  const profile = useUserStore((s) => s.profile);
+  const fertilityEnabled = useSettingsStore((s) => s.settings.fertilityTrackingEnabled);
   const today = new Date();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const fertilityDates = useMemo(() => {
+    if (!fertilityEnabled || profile.isTeenager || cycles.length === 0) return new Map<string, 'high' | 'peak'>();
+    const map = new Map<string, 'high' | 'peak'>();
+    for (const cycle of cycles) {
+      const len = cycle.cycleLength ?? profile.typicalCycleLength;
+      if (len < MIN_CYCLE_LENGTH) continue;
+      const window = calculateFertilityWindow(cycle.startDate, len);
+      const start = parseISO(window.fertileStart);
+      const end = parseISO(window.fertileEnd);
+      const peakStart = parseISO(window.peakStart);
+      const peakEnd = parseISO(window.peakEnd);
+      const days = eachDayOfInterval({ start, end });
+      for (const day of days) {
+        const key = format(day, 'yyyy-MM-dd');
+        if (isWithinInterval(day, { start: peakStart, end: peakEnd })) {
+          map.set(key, 'peak');
+        } else if (!map.has(key)) {
+          map.set(key, 'high');
+        }
+      }
+    }
+    return map;
+  }, [cycles, profile.typicalCycleLength, profile.isTeenager, fertilityEnabled]);
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(month);
@@ -48,24 +76,27 @@ export function IntercourseCalendarGrid({ month, onSelectDay }: IntercourseCalen
   }, [month]);
 
   return (
-    <View style={styles.container}>
+    <View>
       {/* Weekday headers */}
-      <View style={styles.weekdayRow}>
+      <View className="flex-row mb-1.5">
         {WEEKDAYS.map((day) => (
-          <View key={day} style={styles.weekdayCell}>
-            <Text style={styles.weekdayText}>{day}</Text>
+          <View key={day} style={{ width: '14.2857%', alignItems: 'center', paddingVertical: 8 }}>
+            <Text className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>
+              {day}
+            </Text>
           </View>
         ))}
       </View>
 
       {/* Calendar grid */}
-      <View style={styles.grid}>
+      <View className="flex-row flex-wrap">
         {calendarDays.map((day) => {
           const dateStr = format(day, 'yyyy-MM-dd');
           const isCurrentMonth = isSameMonth(day, month);
           const isToday = isSameDay(day, today);
           const entries = logs[dateStr]?.intercourse;
           const hasEntries = entries && entries.length > 0;
+          const fertility = fertilityDates.get(dateStr);
 
           let heartColor: string | undefined;
           if (hasEntries) {
@@ -76,30 +107,36 @@ export function IntercourseCalendarGrid({ month, onSelectDay }: IntercourseCalen
             <TouchableOpacity
               key={dateStr}
               style={[
-                styles.dayCell,
-                hasEntries && isCurrentMonth && styles.dayCellLogged,
-                isToday && isCurrentMonth && styles.todayCell,
+                { width: '14.2857%', height: 56, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
+                hasEntries && isCurrentMonth && { backgroundColor: colors.primaryMuted },
+                !hasEntries && fertility === 'peak' && isCurrentMonth && { backgroundColor: colors.success + '18' },
+                !hasEntries && fertility === 'high' && isCurrentMonth && { backgroundColor: colors.successLight + '30' },
+                isToday && isCurrentMonth && { borderWidth: 2, borderColor: colors.primary },
               ]}
               onPress={() => onSelectDay(dateStr)}
               activeOpacity={0.6}
             >
               <Text
                 style={[
-                  styles.dayText,
-                  !isCurrentMonth && styles.dayTextOutside,
-                  isToday && styles.dayTextToday,
+                  { fontSize: 15, color: colors.text },
+                  !isCurrentMonth ? { color: colors.textDisabled } : undefined,
+                  isToday ? { fontWeight: 'bold', color: colors.primary } : undefined,
                 ]}
               >
                 {format(day, 'd')}
               </Text>
-              {hasEntries && isCurrentMonth && (
-                <View style={styles.heartRow}>
-                  <Text style={[styles.heart, { color: heartColor }]}>♥</Text>
+              {hasEntries && isCurrentMonth ? (
+                <View className="flex-row items-center gap-[1px]">
+                  <Text style={{ fontSize: 11, marginTop: 2, color: heartColor }}>♥</Text>
                   {entries.length > 1 && (
-                    <Text style={styles.countBadge}>{entries.length}</Text>
+                    <Text style={{ fontSize: 8, fontWeight: 'bold', color: colors.primary, marginTop: 2 }}>
+                      {entries.length}
+                    </Text>
                   )}
                 </View>
-              )}
+              ) : fertility && isCurrentMonth ? (
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: fertility === 'peak' ? colors.success : colors.successLight, marginTop: 2 }} />
+              ) : null}
             </TouchableOpacity>
           );
         })}
@@ -107,68 +144,3 @@ export function IntercourseCalendarGrid({ month, onSelectDay }: IntercourseCalen
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    container: {},
-    weekdayRow: {
-      flexDirection: 'row',
-      marginBottom: s(6),
-    },
-    weekdayCell: {
-      width: '14.2857%',
-      alignItems: 'center',
-      paddingVertical: s(8),
-    },
-    weekdayText: {
-      fontSize: fs(12),
-      fontWeight: '600',
-      color: colors.textMuted,
-      textTransform: 'uppercase',
-      letterSpacing: fs(0.3),
-    },
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-    dayCell: {
-      width: '14.2857%',
-      height: s(56),
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderRadius: s(10),
-    },
-    todayCell: {
-      borderWidth: 2,
-      borderColor: colors.primary,
-    },
-    dayCellLogged: {
-      backgroundColor: colors.primaryMuted,
-    },
-    dayText: {
-      fontSize: fs(15),
-      color: colors.text,
-    },
-    dayTextOutside: {
-      color: colors.textDisabled,
-    },
-    dayTextToday: {
-      fontWeight: 'bold',
-      color: colors.primary,
-    },
-    heartRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: s(1),
-    },
-    heart: {
-      fontSize: fs(11),
-      marginTop: s(2),
-    },
-    countBadge: {
-      fontSize: fs(8),
-      fontWeight: '700',
-      color: colors.primary,
-      marginTop: s(2),
-    },
-  });

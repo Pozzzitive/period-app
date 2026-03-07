@@ -3,7 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { zustandMMKVStorage } from '../storage';
 import type { Period, Cycle } from '../models';
 import { generateId } from '../utils/ids';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, subDays, format } from 'date-fns';
+import { useUserStore } from './user-store';
 
 interface CycleState {
   periods: Period[];
@@ -70,6 +71,8 @@ export const useCycleStore = create<CycleState>()(
           return;
         }
 
+        const typicalPeriodLength = useUserStore.getState().profile.typicalPeriodLength;
+
         const sorted = [...periods].sort((a, b) =>
           a.startDate.localeCompare(b.startDate)
         );
@@ -78,14 +81,15 @@ export const useCycleStore = create<CycleState>()(
           const nextPeriod = sorted[index + 1];
           const periodLength = period.endDate
             ? differenceInDays(parseISO(period.endDate), parseISO(period.startDate)) + 1
-            : 5; // default assumption for ongoing period
+            : typicalPeriodLength;
 
           const cycleLength = nextPeriod
             ? differenceInDays(parseISO(nextPeriod.startDate), parseISO(period.startDate))
             : undefined;
 
+          // Cycle ends the day before the next period starts
           const endDate = nextPeriod
-            ? nextPeriod.startDate
+            ? format(subDays(parseISO(nextPeriod.startDate), 1), 'yyyy-MM-dd')
             : undefined;
 
           return {

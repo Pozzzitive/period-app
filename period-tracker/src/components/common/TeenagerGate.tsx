@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUserStore } from '../../stores';
+import { useUserStore, useSettingsStore } from '../../stores';
 
 interface TeenagerGateProps {
   children: React.ReactNode;
@@ -7,11 +7,12 @@ interface TeenagerGateProps {
 }
 
 /**
- * Hides content when teenager mode is active.
- * Used to hide intercourse logging, fertility tracking, and adult content.
+ * Hides content when teenager mode is active OR when the user has
+ * opted out of intercourse data collection (GDPR Article 9).
  */
 export function TeenagerGate({ children, fallback = null }: TeenagerGateProps) {
   const isTeenager = useUserStore((s) => s.profile.isTeenager);
-  if (isTeenager) return <>{fallback}</>;
+  const intercourseConsent = useSettingsStore((s) => s.settings.dataCategories.intercourse);
+  if (isTeenager || !intercourseConsent) return <>{fallback}</>;
   return <>{children}</>;
 }

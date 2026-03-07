@@ -1,15 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  Platform,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { InlineDatePicker } from '@/src/components/common/InlineDatePicker';
 import { useUserStore, useCycleStore } from '@/src/stores';
 import { format, subDays } from 'date-fns';
 import {
@@ -20,20 +12,19 @@ import {
   MIN_PERIOD_LENGTH,
   MAX_PERIOD_LENGTH,
 } from '@/src/constants/phases';
-import { useTheme, type ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
+import { useTheme } from '@/src/theme';
+import { OnboardingProgress } from '@/src/components/common/OnboardingProgress';
 
 export default function CycleInfoScreen() {
   const router = useRouter();
   const updateProfile = useUserStore((s) => s.updateProfile);
   const addPeriod = useCycleStore((s) => s.addPeriod);
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [cycleLength, setCycleLength] = useState(DEFAULT_CYCLE_LENGTH);
   const [periodLength, setPeriodLength] = useState(DEFAULT_PERIOD_LENGTH);
   const [lastPeriodDate, setLastPeriodDate] = useState(subDays(new Date(), 14));
-  const [showDatePicker, setShowDatePicker] = useState(false);
+
 
   const handleNext = () => {
     const dateStr = format(lastPeriodDate, 'yyyy-MM-dd');
@@ -53,198 +44,76 @@ export default function CycleInfoScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>About Your Cycle</Text>
-        <Text style={styles.subtitle}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingTop: 24, paddingBottom: 24 }}>
+        <OnboardingProgress step={0} />
+        <Text style={{ fontSize: 28, fontWeight: 'bold', color: colors.text, marginBottom: 8 }}>About Your Cycle</Text>
+        <Text style={{ fontSize: 15, color: colors.textSecondary, marginBottom: 32 }}>
           This helps us make accurate predictions. You can always adjust later.
         </Text>
 
         {/* Cycle Length */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Typical cycle length</Text>
-          <Text style={styles.hint}>
+        <View style={{ marginBottom: 28 }}>
+          <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 4 }}>Typical cycle length</Text>
+          <Text style={{ fontSize: 13, color: colors.textTertiary, marginBottom: 12 }}>
             From the first day of one period to the first day of the next
           </Text>
-          <View style={styles.stepper}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
             <TouchableOpacity
-              style={styles.stepperBtn}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }}
               onPress={() => setCycleLength(Math.max(MIN_CYCLE_LENGTH, cycleLength - 1))}
             >
-              <Text style={styles.stepperBtnText}>-</Text>
+              <Text style={{ color: colors.onPrimary, fontSize: 22, fontWeight: 'bold' }}>-</Text>
             </TouchableOpacity>
-            <Text style={styles.stepperValue}>{cycleLength} days</Text>
+            <Text style={{ fontSize: 20, fontWeight: '600', color: colors.text, minWidth: 90, textAlign: 'center' }}>{cycleLength} days</Text>
             <TouchableOpacity
-              style={styles.stepperBtn}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }}
               onPress={() => setCycleLength(Math.min(MAX_CYCLE_LENGTH, cycleLength + 1))}
             >
-              <Text style={styles.stepperBtnText}>+</Text>
+              <Text style={{ color: colors.onPrimary, fontSize: 22, fontWeight: 'bold' }}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Period Length */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Typical period length</Text>
-          <Text style={styles.hint}>How many days you usually bleed</Text>
-          <View style={styles.stepper}>
+        <View style={{ marginBottom: 28 }}>
+          <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 4 }}>Typical period length</Text>
+          <Text style={{ fontSize: 13, color: colors.textTertiary, marginBottom: 12 }}>How many days you usually bleed</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
             <TouchableOpacity
-              style={styles.stepperBtn}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }}
               onPress={() => setPeriodLength(Math.max(MIN_PERIOD_LENGTH, periodLength - 1))}
             >
-              <Text style={styles.stepperBtnText}>-</Text>
+              <Text style={{ color: colors.onPrimary, fontSize: 22, fontWeight: 'bold' }}>-</Text>
             </TouchableOpacity>
-            <Text style={styles.stepperValue}>{periodLength} days</Text>
+            <Text style={{ fontSize: 20, fontWeight: '600', color: colors.text, minWidth: 90, textAlign: 'center' }}>{periodLength} days</Text>
             <TouchableOpacity
-              style={styles.stepperBtn}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }}
               onPress={() => setPeriodLength(Math.min(MAX_PERIOD_LENGTH, periodLength + 1))}
             >
-              <Text style={styles.stepperBtnText}>+</Text>
+              <Text style={{ color: colors.onPrimary, fontSize: 22, fontWeight: 'bold' }}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Last Period Date */}
-        <View style={styles.section}>
-          <Text style={styles.label}>When did your last period start?</Text>
-          {Platform.OS === 'ios' ? (
-            <DateTimePicker
-              value={lastPeriodDate}
-              mode="date"
-              display="inline"
-              maximumDate={new Date()}
-              onChange={(_, date) => {
-                if (date) setLastPeriodDate(date);
-              }}
-              style={styles.datePickerInline}
-              accentColor={colors.primary}
-            />
-          ) : (
-            <>
-              <Text style={styles.dateSelected}>
-                {format(lastPeriodDate, 'MMMM d, yyyy')}
-              </Text>
-              <TouchableOpacity
-                style={styles.dateChangeBtn}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Text style={styles.dateChangeBtnText}>Change date</Text>
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={lastPeriodDate}
-                  mode="date"
-                  maximumDate={new Date()}
-                  onChange={(_, date) => {
-                    setShowDatePicker(false);
-                    if (date) setLastPeriodDate(date);
-                  }}
-                />
-              )}
-            </>
-          )}
+        <View style={{ marginBottom: 28 }}>
+          <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 4 }}>When did your last period start?</Text>
+          <InlineDatePicker
+            value={lastPeriodDate}
+            onChange={setLastPeriodDate}
+            maximumDate={new Date()}
+            minimumDate={subDays(new Date(), 90)}
+          />
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.button} onPress={handleNext}>
-        <Text style={styles.buttonText}>Continue</Text>
+      <TouchableOpacity
+        style={{ backgroundColor: colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginBottom: 16 }}
+        onPress={handleNext}
+      >
+        <Text style={{ color: colors.onPrimary, fontSize: 18, fontWeight: '600' }}>Continue</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
-
-const createStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: s(24),
-  },
-  content: {
-    paddingTop: s(40),
-    paddingBottom: s(24),
-  },
-  title: {
-    fontSize: fs(28),
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: s(8),
-  },
-  subtitle: {
-    fontSize: fs(15),
-    color: colors.textSecondary,
-    marginBottom: s(32),
-  },
-  section: {
-    marginBottom: s(28),
-  },
-  label: {
-    fontSize: fs(17),
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: s(4),
-  },
-  hint: {
-    fontSize: fs(13),
-    color: colors.textTertiary,
-    marginBottom: s(12),
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: s(20),
-  },
-  stepperBtn: {
-    width: s(44),
-    height: s(44),
-    borderRadius: s(22),
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepperBtnText: {
-    color: colors.onPrimary,
-    fontSize: fs(22),
-    fontWeight: 'bold',
-  },
-  stepperValue: {
-    fontSize: fs(20),
-    fontWeight: '600',
-    color: colors.text,
-    minWidth: s(90),
-    textAlign: 'center',
-  },
-  dateSelected: {
-    fontSize: fs(20),
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: s(8),
-  },
-  dateChangeBtn: {
-    alignSelf: 'center',
-    paddingVertical: s(8),
-    paddingHorizontal: s(16),
-  },
-  dateChangeBtnText: {
-    fontSize: fs(15),
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  datePickerInline: {
-    marginTop: s(8),
-    alignSelf: 'center',
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: s(16),
-    borderRadius: s(12),
-    alignItems: 'center',
-    marginBottom: s(16),
-  },
-  buttonText: {
-    color: colors.onPrimary,
-    fontSize: fs(18),
-    fontWeight: '600',
-  },
-});

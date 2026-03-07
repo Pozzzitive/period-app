@@ -1,0 +1,77 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+
+@theme {
+  /* Backgrounds */
+  --color-background: #FFF7F8;
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #FFFAFB;
+  --color-surface-tertiary: #F2E6E8;
+
+  /* Primary */
+  --color-primary: #D4587A;
+  --color-primary-light: #FAE0E8;
+  --color-primary-muted: #FFF0F4;
+  --color-on-primary: #FFFFFF;
+
+  /* Text — using "foreground" prefix to avoid Tailwind text-* conflicts */
+  --color-foreground: #2D1F24;
+  --color-foreground-secondary: #5C4A52;
+  --color-foreground-tertiary: #8A7880;
+  --color-foreground-muted: #A8969E;
+  --color-foreground-disabled: #CBBFC4;
+
+  /* Borders */
+  --color-border: #E8D8DC;
+  --color-border-light: #F2EAEC;
+  --color-border-subtle: #EEDEE2;
+
+  /* Tab bar */
+  --color-tab-bar-bg: #FFFAFB;
+  --color-tab-bar-border: #EEDEE2;
+  --color-tab-bar-active: #D4587A;
+  --color-tab-bar-inactive: #A8969E;
+
+  /* Interactive */
+  --color-switch-active: #D4587A;
+  --color-selected-border: #D4587A;
+  --color-selected-bg: #FAE0E8;
+
+  /* Semantic */
+  --color-destructive: #DC2626;
+  --color-destructive-light: #FEE2E2;
+  --color-success: #059669;
+  --color-success-light: #D1FAE5;
+  --color-warning: #D97706;
+  --color-warning-light: #FEF3C7;
+  --color-warning-border: #FCD34D;
+  --color-info: #2563EB;
+  --color-info-light: #DBEAFE;
+
+  /* Confidence */
+  --color-confidence-learning: #FEF3C7;
+  --color-confidence-low: #FFEBEE;
+  --color-confidence-medium: #E3F2FD;
+  --color-confidence-high: #E8F5E9;
+
+  /* Misc */
+  --color-shadow: #000000;
+  --color-backdrop: rgba(0, 0, 0, 0.3);
+  --color-sheet-bg: #FFFAFB;
+  --color-handle: #CBBFC4;
+
+  /* Phase colors */
+  --color-phase-menstruation: #D4738C;
+  --color-phase-menstruation-light: #F5E0E6;
+  --color-phase-follicular: #6BAF9A;
+  --color-phase-follicular-light: #DFF0EA;
+  --color-phase-ovulation: #A888C4;
+  --color-phase-ovulation-light: #EDE0F4;
+  --color-phase-luteal: #D4A06E;
+  --color-phase-luteal-light: #F6E8D8;
+  --color-phase-premenstrual: #7E9BC4;
+  --color-phase-premenstrual-light: #DEE8F4;
+}

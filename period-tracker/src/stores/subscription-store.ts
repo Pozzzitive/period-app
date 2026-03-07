@@ -10,7 +10,6 @@ interface SubscriptionState {
   // Actions
   setSubscription: (status: Partial<SubscriptionStatus>) => void;
   setPurchasedApp: (purchased: boolean) => void;
-  isPremiumPlus: () => boolean;
   clearAll: () => void;
 }
 
@@ -32,11 +31,6 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
       setPurchasedApp: (purchased) => set({ hasPurchasedApp: purchased }),
 
-      isPremiumPlus: () => {
-        const { subscription } = get();
-        return subscription.tier === 'premium_plus' && subscription.isActive;
-      },
-
       clearAll: () =>
         set({
           subscription: { ...defaultSubscription },
@@ -49,3 +43,11 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     }
   )
 );
+
+// Reactive selectors — use these in components instead of store methods
+// so that React re-renders when the underlying state changes.
+export const selectIsPremiumPlus = (s: SubscriptionState) =>
+  s.subscription.tier === 'premium_plus' && s.subscription.isActive;
+
+export const selectShouldShowAds = (s: SubscriptionState) =>
+  !s.hasPurchasedApp && !(s.subscription.tier === 'premium_plus' && s.subscription.isActive);

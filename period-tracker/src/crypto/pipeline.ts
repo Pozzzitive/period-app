@@ -6,6 +6,10 @@
  */
 
 import { Paths, File, Directory } from 'expo-file-system';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 export interface BackupMetadata {
   version: number;
@@ -23,7 +27,9 @@ const BACKUP_FILE_NAME = 'local-backup.json';
 const METADATA_FILE_NAME = 'meta.json';
 
 function getBackupDir(): Directory {
-  return new Directory(Paths.document, BACKUP_DIR_NAME);
+  // Use cache directory to avoid iCloud backup of unencrypted health data.
+  // Paths.cache is excluded from iCloud/iTunes backups by default.
+  return new Directory(Paths.cache, BACKUP_DIR_NAME);
 }
 
 /**
@@ -36,7 +42,8 @@ export function createLocalBackup(data: Record<string, unknown>): BackupMetadata
   }
 
   const json = JSON.stringify(data);
-  const originalSize = json.length;
+  // Use TextEncoder to get actual byte length (not UTF-16 code units)
+  const originalSize = new TextEncoder().encode(json).byteLength;
 
   const backupFile = new File(dir, BACKUP_FILE_NAME);
   backupFile.write(json);
@@ -44,7 +51,7 @@ export function createLocalBackup(data: Record<string, unknown>): BackupMetadata
   const metadata: BackupMetadata = {
     version: 1,
     timestamp: new Date().toISOString(),
-    appVersion: '1.0.0',
+    appVersion: APP_VERSION,
     serialization: 'json',
     compression: 'none',
     encryption: 'none',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSubscriptionStore } from '../../stores';
+import { useSubscriptionStore, selectIsPremiumPlus } from '../../stores/subscription-store';
 
 interface PremiumGateProps {
   children: React.ReactNode;
@@ -11,7 +11,7 @@ interface PremiumGateProps {
  * Shows fallback (e.g., upgrade prompt) otherwise.
  */
 export function PremiumGate({ children, fallback = null }: PremiumGateProps) {
-  const isPremium = useSubscriptionStore((s) => s.isPremiumPlus());
+  const isPremium = useSubscriptionStore(selectIsPremiumPlus);
   if (!isPremium) return <>{fallback}</>;
   return <>{children}</>;
 }

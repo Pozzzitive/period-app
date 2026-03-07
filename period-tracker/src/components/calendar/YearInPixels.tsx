@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import {
   format,
   parseISO,
@@ -10,8 +10,7 @@ import {
 import { useCycleStore, useUserStore } from '../../stores';
 import { calculatePhase } from '../../engine';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
-import { s, fs, SCREEN_W } from '../../utils/scale';
+import { s, SCREEN_W } from '../../utils/scale';
 
 interface YearInPixelsProps {
   year: number;
@@ -33,9 +32,9 @@ export function YearInPixels({ year, onSelectMonth }: YearInPixelsProps) {
   const periods = useCycleStore((s) => s.periods);
   const cycles = useCycleStore((s) => s.cycles);
   const profile = useUserStore((s) => s.profile);
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
   const noDataColor = colors.surfaceTertiary;
 
   // Build period dates set (same logic as CalendarGrid)
@@ -54,23 +53,22 @@ export function YearInPixels({ year, onSelectMonth }: YearInPixelsProps) {
     return dates;
   }, [periods, profile.typicalPeriodLength]);
 
-  // Get phase color for a date
-  const getColorForDate = (dateStr: string): string => {
-    if (periodDates.has(dateStr)) return colors.phases.menstruation.color;
-
-    for (const cycle of cycles) {
-      const cycleLength = cycle.cycleLength ?? profile.typicalCycleLength;
-      const phase = calculatePhase(dateStr, cycle.startDate, cycleLength, cycle.periodLength);
-      if (phase) return colors.phases[phase.phase].lightColor;
-    }
-    return noDataColor;
-  };
-
-  // Build month data
+  // Build month data — getColorForDate inlined to avoid stale closure
   const monthRows = useMemo(() => {
+    const getColor = (dateStr: string): string => {
+      if (periodDates.has(dateStr)) return colors.phases.menstruation.color;
+
+      for (const cycle of cycles) {
+        if (dateStr < cycle.startDate) continue;
+        const cycleLength = cycle.cycleLength ?? profile.typicalCycleLength;
+        const phase = calculatePhase(dateStr, cycle.startDate, cycleLength, cycle.periodLength);
+        if (phase) return colors.phases[phase.phase].lightColor;
+      }
+      return noDataColor;
+    };
+
     return MONTH_LABELS.map((label, monthIndex) => {
       const monthDate = new Date(year, monthIndex, 1);
-      // new Date(year, month+1, 0) gives last day of month — handles leap years
       const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
       const days: Array<{ dateStr: string; color: string; isToday: boolean }> = [];
 
@@ -79,34 +77,41 @@ export function YearInPixels({ year, onSelectMonth }: YearInPixelsProps) {
         const dateStr = format(date, 'yyyy-MM-dd');
         days.push({
           dateStr,
-          color: getColorForDate(dateStr),
-          isToday: isSameDay(date, today),
+          color: getColor(dateStr),
+          isToday: dateStr === todayStr,
         });
       }
 
       return { label, monthDate, days };
     });
-  }, [year, periodDates, cycles, profile.typicalCycleLength, colors]);
+  }, [year, periodDates, cycles, profile.typicalCycleLength, colors, noDataColor, todayStr]);
 
   return (
-    <View style={styles.container}>
+    <View className="gap-1">
       {monthRows.map((row) => (
-        <View key={row.label} style={styles.monthRow}>
+        <View key={row.label} className="flex-row items-center">
           <TouchableOpacity
-            style={styles.labelContainer}
+            style={{ width: LABEL_WIDTH }}
             onPress={() => onSelectMonth(row.monthDate)}
             activeOpacity={0.6}
           >
-            <Text style={styles.monthLabel}>{row.label}</Text>
+            <Text className="text-[11px] font-semibold" style={{ color: colors.primary }}>{row.label}</Text>
           </TouchableOpacity>
-          <View style={styles.pixelRow}>
+          <View style={{ flexDirection: 'row', gap: PIXEL_GAP, flexWrap: 'nowrap' }}>
             {row.days.map((day) => (
               <View
                 key={day.dateStr}
                 style={[
-                  styles.pixel,
-                  { backgroundColor: day.color },
-                  day.isToday && styles.todayPixel,
+                  {
+                    width: PIXEL_SIZE,
+                    height: PIXEL_SIZE,
+                    borderRadius: 2,
+                    backgroundColor: day.color,
+                  },
+                  day.isToday && {
+                    borderWidth: 1,
+                    borderColor: colors.text,
+                  },
                 ]}
               />
             ))}
@@ -116,36 +121,3 @@ export function YearInPixels({ year, onSelectMonth }: YearInPixelsProps) {
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    container: {
-      gap: s(4),
-    },
-    monthRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    labelContainer: {
-      width: LABEL_WIDTH,
-    },
-    monthLabel: {
-      fontSize: fs(11),
-      fontWeight: '600',
-      color: colors.primary,
-    },
-    pixelRow: {
-      flexDirection: 'row',
-      gap: PIXEL_GAP,
-      flexWrap: 'nowrap',
-    },
-    pixel: {
-      width: PIXEL_SIZE,
-      height: PIXEL_SIZE,
-      borderRadius: 2,
-    },
-    todayPixel: {
-      borderWidth: 1,
-      borderColor: colors.text,
-    },
-  });

@@ -1,31 +1,51 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useCycleStore } from '../../stores';
 import { todayString } from '../../utils/dates';
-import type { MissingPeriodResponse } from '../../models';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
-import { s, fs } from '../../utils/scale';
+import type { MissingPeriodResponse } from '../../models';
 
 interface MissingPeriodPromptProps {
   onDismiss: () => void;
 }
 
 export function MissingPeriodPrompt({ onDismiss }: MissingPeriodPromptProps) {
-  const router = useRouter();
   const { colors } = useTheme();
+  const router = useRouter();
   const addPeriod = useCycleStore((s) => s.addPeriod);
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleResponse = (response: MissingPeriodResponse) => {
     switch (response) {
       case 'log_period':
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         addPeriod(todayString());
         router.push(`/day/${todayString()}`);
         break;
       case 'late_waiting':
+        break;
       case 'forgot_to_log':
+        // Navigate to day detail with yesterday's date so the user can log a past period
+        Alert.alert(
+          'Log a past period',
+          'Would you like to pick the date your period actually started?',
+          [
+            { text: 'Not now', style: 'cancel' },
+            {
+              text: 'Pick date',
+              onPress: () => {
+                // Dismissing first, then the home screen's "Log period" modal
+                // can be used with a date picker already showing
+                onDismiss();
+                // Small delay so the prompt animates out before navigation
+                setTimeout(() => router.push(`/day/${todayString()}`), 300);
+                return;
+              },
+            },
+          ]
+        );
+        return; // Don't dismiss yet — wait for Alert response
       case 'skip_cycle':
         break;
     }
@@ -33,92 +53,54 @@ export function MissingPeriodPrompt({ onDismiss }: MissingPeriodPromptProps) {
   };
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Haven't logged your period yet</Text>
-      <Text style={styles.description}>
+    <View className="p-5 rounded-2xl mb-4" style={{ backgroundColor: colors.warningLight, borderWidth: 1, borderColor: colors.warningBorder }}>
+      <Text className="text-[17px] font-semibold mb-2" style={{ color: colors.warning }}>Haven't logged your period yet</Text>
+      <Text className="text-sm leading-5 mb-4" style={{ color: colors.textSecondary }}>
         It looks like you haven't logged your period yet. Would you like to log
         it now?
       </Text>
 
-      <View style={styles.options}>
+      <View className="gap-2">
         <TouchableOpacity
-          style={styles.optionButton}
+          className="py-3 rounded-[10px] items-center"
+          style={{ backgroundColor: colors.primary }}
           onPress={() => handleResponse('log_period')}
+          accessibilityLabel="Log period starting today"
+          accessibilityRole="button"
         >
-          <Text style={styles.optionPrimary}>Log period</Text>
+          <Text className="text-base font-semibold" style={{ color: colors.onPrimary }}>Log period</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.optionButtonSecondary}
+          className="py-3 rounded-[10px] items-center"
+          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
           onPress={() => handleResponse('late_waiting')}
+          accessibilityLabel="Late, still waiting"
+          accessibilityRole="button"
         >
-          <Text style={styles.optionSecondary}>Late — still waiting</Text>
+          <Text className="text-[15px]" style={{ color: colors.text }}>Late — still waiting</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.optionButtonSecondary}
+          className="py-3 rounded-[10px] items-center"
+          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
           onPress={() => handleResponse('forgot_to_log')}
+          accessibilityLabel="I forgot to log my period"
+          accessibilityRole="button"
         >
-          <Text style={styles.optionSecondary}>I forgot to log</Text>
+          <Text className="text-[15px]" style={{ color: colors.text }}>I forgot to log</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.optionButtonSecondary}
+          className="py-3 rounded-[10px] items-center"
+          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
           onPress={() => handleResponse('skip_cycle')}
+          accessibilityLabel="Skip this cycle"
+          accessibilityRole="button"
         >
-          <Text style={styles.optionSecondary}>Skip this cycle</Text>
+          <Text className="text-[15px]" style={{ color: colors.text }}>Skip this cycle</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.warningLight,
-      padding: s(20),
-      borderRadius: s(16),
-      marginBottom: s(16),
-      borderWidth: 1,
-      borderColor: colors.warningBorder,
-    },
-    title: {
-      fontSize: fs(17),
-      fontWeight: '600',
-      color: colors.warning,
-      marginBottom: s(8),
-    },
-    description: {
-      fontSize: fs(14),
-      color: colors.textSecondary,
-      lineHeight: fs(20),
-      marginBottom: s(16),
-    },
-    options: {
-      gap: s(8),
-    },
-    optionButton: {
-      backgroundColor: colors.primary,
-      paddingVertical: s(12),
-      borderRadius: s(10),
-      alignItems: 'center',
-    },
-    optionPrimary: {
-      color: colors.onPrimary,
-      fontSize: fs(16),
-      fontWeight: '600',
-    },
-    optionButtonSecondary: {
-      backgroundColor: colors.surface,
-      paddingVertical: s(12),
-      borderRadius: s(10),
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    optionSecondary: {
-      color: colors.text,
-      fontSize: fs(15),
-    },
-  });

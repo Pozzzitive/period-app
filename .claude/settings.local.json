@@ -22,7 +22,21 @@
       "Bash(grep:*)",
       "WebFetch(domain:www.figma.com)",
       "WebFetch(domain:www.schemecolor.com)",
-      "WebFetch(domain:colormagic.app)"
+      "WebFetch(domain:colormagic.app)",
+      "WebFetch(domain:www.nativewind.dev)",
+      "Bash(npm view:*)",
+      "Bash(export:*)",
+      "Bash($ANDROID_HOME/platform-tools/adb logcat:*)",
+      "Bash(/usr/bin/tail:*)",
+      "Bash(/Users/bogdan/Library/Android/sdk/platform-tools/adb logcat -c)",
+      "Bash(/Users/bogdan/Library/Android/sdk/platform-tools/adb shell am start -n com.bogdan.periodtracker/.MainActivity)",
+      "Bash(/Users/bogdan/Library/Android/sdk/platform-tools/adb shell pm list packages:*)",
+      "Bash(/Users/bogdan/Library/Android/sdk/platform-tools/adb shell cmd package resolve-activity --brief com.periodtracker.app)",
+      "Bash(npx expo:*)",
+      "Bash(npm info:*)",
+      "Bash(/Users/bogdan/Mobile_Projects/react_period_app/period-tracker/node_modules/.bin/tsc:*)",
+      "Bash(/Users/bogdan/Mobile_Projects/react_period_app/period-tracker/node_modules/.bin/jest --config /Users/bogdan/Mobile_Projects/react_period_app/period-tracker/jest.config.js --no-coverage --rootDir /Users/bogdan/Mobile_Projects/react_period_app/period-tracker)",
+      "Bash(node_modules/.bin/jest --no-cache)"
     ]
   }
 }

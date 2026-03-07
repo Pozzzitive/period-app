@@ -14,7 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.periodtracker.app"
+      "bundleIdentifier": "com.periodtracker.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Period Tracker uses Face ID to protect your private health data when app lock is enabled.",
+        "NSCameraUsageDescription": "Period Tracker needs camera access to take photos for your cycle diary entries.",
+        "NSPhotoLibraryUsageDescription": "Period Tracker needs photo library access to attach images to your cycle diary entries.",
+        "NSUserTrackingUsageDescription": "This is used only for showing relevant ads. Your health data is never shared."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -32,10 +39,70 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      "react-native-iap",
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "CycleWidget",
+              "displayName": "Cycle Tracker",
+              "description": "Shows your current cycle phase and days until next period",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "CycleWidget",
+              "label": "Cycle Tracker",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "320dp",
+              "maxResizeHeight": "200dp",
+              "description": "Shows your current cycle phase and days until next period",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
+            },
+            {
+              "name": "CycleWidgetWide",
+              "label": "Cycle Tracker Wide",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "320dp",
+              "maxResizeHeight": "200dp",
+              "description": "Shows your cycle phase, days countdown and progress ring",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9898eef1-6238-4364-ab3f-f400925e66ca"
+      }
     }
   }
 }

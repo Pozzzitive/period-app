@@ -1,57 +1,53 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Switch, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { format, addMonths, subMonths } from 'date-fns';
+import { format, addMonths, subMonths, isSameMonth } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { CalendarGrid } from '@/src/components/calendar/CalendarGrid';
 import { YearInPixels } from '@/src/components/calendar/YearInPixels';
 import { DaySummarySheet } from '@/src/components/calendar/DaySummarySheet';
+import { AnimatedPillToggle } from '@/src/components/common/AnimatedPillToggle';
+import { AnimatedViewSwitcher } from '@/src/components/common/AnimatedViewSwitcher';
 import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlowers';
 import { FlowerBackground } from '@/src/components/decorations/FlowerBackground';
 import { useBarInsets } from '@/src/hooks/useBarInsets';
 import { useMultiplePredictions } from '@/src/hooks/useMultiplePredictions';
 import { useSettingsStore, useUserStore } from '@/src/stores';
 import { useTheme } from '@/src/theme';
-import type { ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
 
 type ViewMode = 'monthly' | 'yearly';
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const fertilityEnabled = useSettingsStore((s) => s.settings.fertilityTrackingEnabled);
+  const predictionCount = useSettingsStore((s) => s.settings.predictionCount);
+  const showPredictedPhases = useSettingsStore((s) => s.settings.showPredictedPhases);
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
   const isTeenager = useUserStore((s) => s.profile.isTeenager);
   const showFertility = fertilityEnabled && !isTeenager;
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState<string | undefined>();
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
-  const [predictionCount, setPredictionCount] = useState(3);
-  const [showPredictedPhases, setShowPredictedPhases] = useState(true);
   const predictedPeriods = useMultiplePredictions(viewMode === 'monthly' ? predictionCount : 0);
 
-  // Bottom sheet state
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetDate, setSheetDate] = useState('');
 
   const barInsets = useBarInsets();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const handlePrevMonth = useCallback(() => {
-    setCurrentMonth((m) => subMonths(m, 1));
+  const handlePrevMonth = useCallback(() => { setCurrentMonth((m) => subMonths(m, 1)); }, []);
+  const handleNextMonth = useCallback(() => { setCurrentMonth((m) => addMonths(m, 1)); }, []);
+  const handlePrevYear = useCallback(() => { setCurrentYear((y) => y - 1); }, []);
+  const handleNextYear = useCallback(() => { setCurrentYear((y) => y + 1); }, []);
+
+  const handleJumpToToday = useCallback(() => {
+    setCurrentMonth(new Date());
   }, []);
 
-  const handleNextMonth = useCallback(() => {
-    setCurrentMonth((m) => addMonths(m, 1));
-  }, []);
-
-  const handlePrevYear = useCallback(() => {
-    setCurrentYear((y) => y - 1);
-  }, []);
-
-  const handleNextYear = useCallback(() => {
-    setCurrentYear((y) => y + 1);
-  }, []);
+  const isCurrentMonth = viewMode === 'monthly' && isSameMonth(currentMonth, new Date());
+  const isCurrentYear = viewMode === 'yearly' && currentYear === new Date().getFullYear();
 
   const handleSelectDay = useCallback((date: string) => {
     setSelectedDate(date);
@@ -59,10 +55,7 @@ export default function CalendarScreen() {
     setSheetVisible(true);
   }, []);
 
-  const handleSheetClose = useCallback(() => {
-    setSheetVisible(false);
-  }, []);
-
+  const handleSheetClose = useCallback(() => { setSheetVisible(false); }, []);
   const handleSheetEdit = useCallback(() => {
     setSheetVisible(false);
     router.push(`/day/${sheetDate}`);
@@ -75,60 +68,59 @@ export default function CalendarScreen() {
 
   return (
     <ScreenWithFlowers backgroundColor={colors.background}>
-    <View style={[styles.container, { paddingTop: barInsets.top + s(16), paddingBottom: barInsets.bottom + s(16) }]}>
+    <View className="flex-1 px-4" style={{ paddingTop: barInsets.top + 16, paddingBottom: barInsets.bottom + 16 }}>
       <FlowerBackground />
       {/* View mode pill toggle */}
-      <View style={styles.pillContainer}>
-        <TouchableOpacity
-          style={[styles.pill, viewMode === 'monthly' && styles.pillActive]}
-          onPress={() => setViewMode('monthly')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.pillText, viewMode === 'monthly' && styles.pillTextActive]}>
-            Monthly
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.pill, viewMode === 'yearly' && styles.pillActive]}
-          onPress={() => setViewMode('yearly')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.pillText, viewMode === 'yearly' && styles.pillTextActive]}>
-            Yearly
-          </Text>
-        </TouchableOpacity>
+      <View className="mb-5">
+        <AnimatedPillToggle
+          options={[
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'yearly', label: 'Yearly' },
+          ]}
+          selected={viewMode}
+          onSelect={setViewMode}
+        />
       </View>
 
       {/* Navigation */}
-      {viewMode === 'monthly' ? (
-        <View style={styles.nav}>
-          <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
-            <Text style={styles.navText}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.navTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
-          <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
-            <Text style={styles.navText}>›</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.nav}>
-          <TouchableOpacity onPress={handlePrevYear} style={styles.navButton}>
-            <Text style={styles.navText}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.navTitle}>{currentYear}</Text>
-          <TouchableOpacity onPress={handleNextYear} style={styles.navButton}>
-            <Text style={styles.navText}>›</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View className="flex-row justify-between items-center mb-3">
+        <TouchableOpacity
+          onPress={viewMode === 'monthly' ? handlePrevMonth : handlePrevYear}
+          className="p-3 min-w-[44px] min-h-[44px] justify-center items-center"
+          accessibilityLabel={viewMode === 'monthly' ? 'Previous month' : 'Previous year'}
+          accessibilityRole="button"
+        >
+          <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u2039'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={isCurrentMonth || isCurrentYear ? undefined : viewMode === 'monthly' ? handleJumpToToday : () => setCurrentYear(new Date().getFullYear())}
+          disabled={isCurrentMonth || isCurrentYear}
+          activeOpacity={0.6}
+        >
+          <Text className="text-lg font-bold tracking-tight" style={{ color: colors.text }}>
+            {viewMode === 'monthly' ? format(currentMonth, 'MMMM yyyy') : currentYear}
+          </Text>
+          {!isCurrentMonth && !isCurrentYear && (
+            <Text className="text-[11px] text-center" style={{ color: colors.primary }}>Tap for today</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={viewMode === 'monthly' ? handleNextMonth : handleNextYear}
+          className="p-3 min-w-[44px] min-h-[44px] justify-center items-center"
+          accessibilityLabel={viewMode === 'monthly' ? 'Next month' : 'Next year'}
+          accessibilityRole="button"
+        >
+          <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u203A'}</Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Legend */}
-      <View style={styles.legend}>
-        <LegendItem color={colors.phases.menstruation.color} label="Period" />
-        <LegendItem color={colors.phases.follicular.color} label="Follicular" />
-        <LegendItem color={colors.phases.ovulation.color} label="Ovulation" />
-        <LegendItem color={colors.phases.luteal.color} label="Luteal" />
-        <LegendItem color={colors.phases.premenstrual.color} label="PMS" />
+      {/* Legend — use same alpha as calendar cells so dots match cell backgrounds */}
+      <View className="flex-row flex-wrap gap-3.5 mb-3.5 justify-center">
+        <LegendItem color={`${colors.phases.menstruation.color}${isDark ? '99' : '55'}`} label="Period" />
+        <LegendItem color={`${colors.phases.follicular.color}${isDark ? '99' : '55'}`} label="Follicular" />
+        <LegendItem color={`${colors.phases.ovulation.color}${isDark ? '99' : '55'}`} label="Ovulation" />
+        <LegendItem color={`${colors.phases.luteal.color}${isDark ? '99' : '55'}`} label="Luteal" />
+        <LegendItem color={`${colors.phases.premenstrual.color}${isDark ? '99' : '55'}`} label="PMS" />
         {viewMode === 'monthly' && predictionCount > 0 && (
           <PredictedLegendItem color={colors.phases.menstruation.color} />
         )}
@@ -143,36 +135,49 @@ export default function CalendarScreen() {
       {/* Prediction controls (monthly only) */}
       {viewMode === 'monthly' && (
         <>
-          <View style={styles.stepperRow}>
-            <Text style={styles.stepperLabel}>Predicted periods</Text>
-            <View style={styles.stepperControls}>
+          <View className="flex-row items-center justify-between mb-2 px-1">
+            <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>Predicted periods</Text>
+            <View className="flex-row items-center gap-3">
               <TouchableOpacity
-                style={[styles.stepperButton, predictionCount <= 0 && styles.stepperButtonDisabled]}
-                onPress={() => setPredictionCount((c) => Math.max(0, c - 1))}
+                className="w-11 h-11 rounded-full justify-center items-center"
+                style={[{ backgroundColor: colors.surfaceTertiary }, predictionCount <= 0 ? { opacity: 0.35 } : undefined]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  updateSettings({ predictionCount: Math.max(0, predictionCount - 1) });
+                }}
                 disabled={predictionCount <= 0}
                 activeOpacity={0.6}
+                accessibilityLabel="Decrease prediction count"
+                accessibilityRole="button"
               >
-                <Text style={[styles.stepperButtonText, predictionCount <= 0 && styles.stepperButtonTextDisabled]}>−</Text>
+                <Text className="text-lg font-semibold leading-5" style={{ color: predictionCount <= 0 ? colors.textDisabled : colors.primary }}>−</Text>
               </TouchableOpacity>
-              <Text style={styles.stepperValue}>{predictionCount}</Text>
+              <Text className="text-[15px] font-semibold min-w-[16px] text-center" style={{ color: colors.text }}>{predictionCount}</Text>
               <TouchableOpacity
-                style={[styles.stepperButton, predictionCount >= 5 && styles.stepperButtonDisabled]}
-                onPress={() => setPredictionCount((c) => Math.min(5, c + 1))}
+                className="w-11 h-11 rounded-full justify-center items-center"
+                style={[{ backgroundColor: colors.surfaceTertiary }, predictionCount >= 5 ? { opacity: 0.35 } : undefined]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  updateSettings({ predictionCount: Math.min(5, predictionCount + 1) });
+                }}
                 disabled={predictionCount >= 5}
                 activeOpacity={0.6}
+                accessibilityLabel="Increase prediction count"
+                accessibilityRole="button"
               >
-                <Text style={[styles.stepperButtonText, predictionCount >= 5 && styles.stepperButtonTextDisabled]}>+</Text>
+                <Text className="text-lg font-semibold leading-5" style={{ color: predictionCount >= 5 ? colors.textDisabled : colors.primary }}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
           {predictionCount > 0 && (
-            <View style={styles.toggleRow}>
-              <Text style={styles.stepperLabel}>Show predicted phases</Text>
+            <View className="flex-row items-center justify-between mb-3 px-1">
+              <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>Show predicted phases</Text>
               <Switch
                 value={showPredictedPhases}
-                onValueChange={setShowPredictedPhases}
+                onValueChange={(val) => updateSettings({ showPredictedPhases: val })}
                 trackColor={{ false: colors.surfaceTertiary, true: colors.primary + '66' }}
                 thumbColor={showPredictedPhases ? colors.primary : colors.textMuted}
+                style={Platform.OS === 'android' ? { transform: [{ scaleX: 1.3 }, { scaleY: 1.3 }] } : undefined}
               />
             </View>
           )}
@@ -180,19 +185,20 @@ export default function CalendarScreen() {
       )}
 
       {/* Content */}
-      {viewMode === 'monthly' ? (
-        <CalendarGrid
-          month={currentMonth}
-          onSelectDay={handleSelectDay}
-          selectedDate={selectedDate}
-          predictedPeriods={predictedPeriods}
-          showPredictedPhases={showPredictedPhases && predictionCount > 0}
-        />
-      ) : (
-        <YearInPixels year={currentYear} onSelectMonth={handleSelectMonth} />
-      )}
+      <AnimatedViewSwitcher transitionKey={viewMode}>
+        {viewMode === 'monthly' ? (
+          <CalendarGrid
+            month={currentMonth}
+            onSelectDay={handleSelectDay}
+            selectedDate={selectedDate}
+            predictedPeriods={predictedPeriods}
+            showPredictedPhases={showPredictedPhases && predictionCount > 0}
+          />
+        ) : (
+          <YearInPixels year={currentYear} onSelectMonth={handleSelectMonth} />
+        )}
+      </AnimatedViewSwitcher>
 
-      {/* Day summary bottom sheet */}
       <DaySummarySheet
         visible={sheetVisible}
         date={sheetDate}
@@ -209,18 +215,9 @@ export default function CalendarScreen() {
 function PredictedLegendItem({ color }: { color: string }) {
   const { colors } = useTheme();
   return (
-    <View style={legendStyles.legendItem}>
-      <View
-        style={[
-          legendStyles.legendDot,
-          {
-            backgroundColor: 'transparent',
-            borderWidth: 1.5,
-            borderColor: color,
-          },
-        ]}
-      />
-      <Text style={[legendStyles.legendText, { color: colors.textTertiary }]}>Predicted</Text>
+    <View className="flex-row items-center gap-[5px]">
+      <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color }} />
+      <Text className="text-[11px] font-medium" style={{ color: colors.textTertiary }}>Predicted</Text>
     </View>
   );
 }
@@ -228,147 +225,9 @@ function PredictedLegendItem({ color }: { color: string }) {
 function LegendItem({ color, label }: { color: string; label: string }) {
   const { colors } = useTheme();
   return (
-    <View style={legendStyles.legendItem}>
-      <View style={[legendStyles.legendDot, { backgroundColor: color }]} />
-      <Text style={[legendStyles.legendText, { color: colors.textTertiary }]}>{label}</Text>
+    <View className="flex-row items-center gap-[5px]">
+      <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+      <Text className="text-[11px] font-medium" style={{ color: colors.textTertiary }}>{label}</Text>
     </View>
   );
 }
-
-const legendStyles = StyleSheet.create({
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s(5),
-  },
-  legendDot: {
-    width: s(10),
-    height: s(10),
-    borderRadius: s(5),
-  },
-  legendText: {
-    fontSize: fs(11),
-    fontWeight: '500',
-  },
-});
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      paddingHorizontal: s(16),
-    },
-    pillContainer: {
-      flexDirection: 'row',
-      backgroundColor: colors.surfaceTertiary,
-      borderRadius: s(22),
-      padding: s(3),
-      marginBottom: s(20),
-    },
-    pill: {
-      flex: 1,
-      paddingVertical: s(9),
-      alignItems: 'center',
-      borderRadius: s(20),
-    },
-    pillActive: {
-      backgroundColor: colors.primary,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: s(2) },
-      shadowOpacity: 0.25,
-      shadowRadius: s(4),
-      elevation: 2,
-    },
-    pillText: {
-      fontSize: fs(14),
-      fontWeight: '600',
-      color: colors.textTertiary,
-    },
-    pillTextActive: {
-      color: colors.onPrimary,
-      fontWeight: '700',
-    },
-    nav: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: s(12),
-    },
-    navButton: {
-      padding: s(12),
-      minWidth: s(44),
-      minHeight: s(44),
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    navText: {
-      fontSize: fs(28),
-      color: colors.primary,
-      fontWeight: '300',
-      lineHeight: fs(32),
-    },
-    navTitle: {
-      fontSize: fs(18),
-      fontWeight: '700',
-      color: colors.text,
-      letterSpacing: fs(0.3),
-    },
-    legend: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: s(14),
-      marginBottom: s(14),
-      justifyContent: 'center',
-    },
-    stepperRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: s(8),
-      paddingHorizontal: s(4),
-    },
-    toggleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: s(12),
-      paddingHorizontal: s(4),
-    },
-    stepperLabel: {
-      fontSize: fs(14),
-      fontWeight: '500',
-      color: colors.textSecondary,
-    },
-    stepperControls: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: s(12),
-    },
-    stepperButton: {
-      width: s(32),
-      height: s(32),
-      borderRadius: s(16),
-      backgroundColor: colors.surfaceTertiary,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    stepperButtonDisabled: {
-      opacity: 0.35,
-    },
-    stepperButtonText: {
-      fontSize: fs(18),
-      fontWeight: '600',
-      color: colors.primary,
-      lineHeight: fs(20),
-    },
-    stepperButtonTextDisabled: {
-      color: colors.textDisabled,
-    },
-    stepperValue: {
-      fontSize: fs(15),
-      fontWeight: '600',
-      color: colors.text,
-      minWidth: s(16),
-      textAlign: 'center',
-    },
-  });

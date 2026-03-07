@@ -34,9 +34,9 @@ describe('getFertilityLevel', () => {
     expect(getFertilityLevel('2026-02-10', window)).toBe('high');
   });
 
-  it('returns low for non-fertile days', () => {
-    expect(getFertilityLevel('2026-02-03', window)).toBe('low');
-    expect(getFertilityLevel('2026-02-20', window)).toBe('low');
+  it('returns none for non-fertile days', () => {
+    expect(getFertilityLevel('2026-02-03', window)).toBe('none');
+    expect(getFertilityLevel('2026-02-20', window)).toBe('none');
   });
 
   it('returns none when no window provided', () => {

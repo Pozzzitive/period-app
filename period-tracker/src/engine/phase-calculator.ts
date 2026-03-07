@@ -4,18 +4,6 @@ import type { CyclePhase } from '../constants/phases';
 import { DEFAULT_CYCLE_LENGTH } from '../constants/phases';
 
 /**
- * Phase proportions based on a standard 28-day cycle.
- * These are scaled proportionally to the actual cycle length.
- */
-const PHASE_PROPORTIONS: Record<CyclePhase, { start: number; end: number }> = {
-  menstruation: { start: 0, end: 5 / 28 },        // ~18% of cycle
-  follicular:   { start: 5 / 28, end: 13 / 28 },   // ~29% of cycle
-  ovulation:    { start: 13 / 28, end: 15 / 28 },   // ~7% of cycle
-  luteal:       { start: 15 / 28, end: 23 / 28 },   // ~29% of cycle
-  premenstrual: { start: 23 / 28, end: 1 },          // ~18% of cycle
-};
-
-/**
  * Calculate the current cycle phase for a given date.
  *
  * @param dateStr - The date to check (YYYY-MM-DD)

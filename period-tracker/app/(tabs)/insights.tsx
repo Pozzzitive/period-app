@@ -1,20 +1,32 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useCycleStore, useUserStore } from '@/src/stores';
 import { CONDITIONS_BY_ID } from '@/src/constants/conditions';
-import { usePrediction, useCyclePhase } from '@/src/hooks';
+import { usePrediction, useCyclePhase, useScrollToTopOnFocus, useFocusKey, useSymptomPatterns } from '@/src/hooks';
 import { standardDeviation } from '@/src/engine/prediction-engine';
+import { MIN_CYCLE_LENGTH } from '@/src/constants/phases';
 import { PhaseCard } from '@/src/components/common/PhaseCard';
 import { PredictionCard } from '@/src/components/common/PredictionCard';
+import { AnimatedPillToggle, usePillSwipe } from '@/src/components/common/AnimatedPillToggle';
+import { AnimatedViewSwitcher } from '@/src/components/common/AnimatedViewSwitcher';
 import { YearInPixels } from '@/src/components/calendar/YearInPixels';
+import { SymptomPatternsSection } from '@/src/components/insights/SymptomPatternsSection';
+import { TrendGraphsSection } from '@/src/components/insights/TrendGraphsSection';
+import { ExtendedAnalyticsSection } from '@/src/components/insights/ExtendedAnalyticsSection';
 import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlowers';
 import { CornerFlowers } from '@/src/components/decorations/CornerFlowers';
 import { useBarInsets } from '@/src/hooks/useBarInsets';
-import { useTheme } from '@/src/theme';
-import type { ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
 
-type ViewMode = 'insights' | 'yearly';
+import { useTheme } from '@/src/theme';
+
+type ViewMode = 'overview' | 'trends' | 'yearly';
+
+const VIEW_OPTIONS = [
+  { value: 'overview' as const, label: 'Overview' },
+  { value: 'trends' as const, label: 'Trends' },
+  { value: 'yearly' as const, label: 'Year in Pixels' },
+];
 
 export default function InsightsScreen() {
   const { colors } = useTheme();
@@ -23,22 +35,23 @@ export default function InsightsScreen() {
   const profile = useUserStore((s) => s.profile);
   const prediction = usePrediction();
   const phase = useCyclePhase();
-  const [viewMode, setViewMode] = useState<ViewMode>('insights');
+  const patterns = useSymptomPatterns();
+  const scrollRef = useScrollToTopOnFocus();
+  const focusKey = useFocusKey();
+  const [viewMode, setViewMode] = useState<ViewMode>('overview');
+  const swipeHandlers = usePillSwipe(VIEW_OPTIONS, viewMode, setViewMode);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const completedCycles = cycles.filter((c) => c.cycleLength != null);
-  const cycleLengths = completedCycles.map((c) => c.cycleLength!);
-
   const stats = useMemo(() => {
-    if (cycleLengths.length === 0) return null;
-    const avg = Math.round(cycleLengths.reduce((a, b) => a + b, 0) / cycleLengths.length);
-    const shortest = Math.min(...cycleLengths);
-    const longest = Math.max(...cycleLengths);
-    const stddev = standardDeviation(cycleLengths);
-    return { avg, shortest, longest, stddev, count: cycleLengths.length };
-  }, [cycleLengths]);
+    const completedCycles = cycles.filter((c) => c.cycleLength != null && c.cycleLength >= MIN_CYCLE_LENGTH);
+    const lengths = completedCycles.map((c) => c.cycleLength!);
+    if (lengths.length === 0) return null;
+    const avg = Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length);
+    const shortest = Math.min(...lengths);
+    const longest = Math.max(...lengths);
+    const stddev = standardDeviation(lengths);
+    return { avg, shortest, longest, stddev, count: lengths.length };
+  }, [cycles]);
 
   const handlePrevYear = useCallback(() => {
     setCurrentYear((y) => y - 1);
@@ -50,277 +63,140 @@ export default function InsightsScreen() {
 
   return (
     <ScreenWithFlowers backgroundColor={colors.background}>
-    <View style={[styles.outerContainer, { paddingTop: barInsets.top }]}>
+    <View className="flex-1" style={{ paddingTop: barInsets.top + 16 }} {...swipeHandlers}>
       <CornerFlowers />
       {/* Pill toggle */}
-      <View style={styles.pillWrapper}>
-        <View style={styles.pillContainer}>
-          <TouchableOpacity
-            style={[styles.pill, viewMode === 'insights' && styles.pillActive]}
-            onPress={() => setViewMode('insights')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.pillText, viewMode === 'insights' && styles.pillTextActive]}>
-              Insights
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.pill, viewMode === 'yearly' && styles.pillActive]}
-            onPress={() => setViewMode('yearly')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.pillText, viewMode === 'yearly' && styles.pillTextActive]}>
-              Year in Pixels
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <View className="px-4 mb-4">
+        <AnimatedPillToggle
+          options={VIEW_OPTIONS}
+          selected={viewMode}
+          onSelect={setViewMode}
+        />
       </View>
 
-      {viewMode === 'insights' ? (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          {/* Phase card */}
-          <PhaseCard phase={phase} />
+      <AnimatedViewSwitcher transitionKey={viewMode}>
+        {viewMode === 'overview' ? (
+          <ScrollView ref={scrollRef} className="flex-1" contentContainerStyle={{ padding: 16, paddingTop: 0, paddingBottom: barInsets.bottom + 32 }}>
+            {/* Phase card */}
+            <Animated.View key={`phase-${focusKey}`} entering={FadeInDown.duration(400).delay(50)}>
+              <PhaseCard phase={phase} />
+            </Animated.View>
 
-          {/* Next period prediction */}
-          <PredictionCard prediction={prediction} />
+            {/* Next period prediction */}
+            <Animated.View key={`prediction-${focusKey}`} entering={FadeInDown.duration(400).delay(150)}>
+              <PredictionCard prediction={prediction} />
+            </Animated.View>
 
-          {/* Cycle statistics */}
-          {stats ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Cycle Statistics</Text>
-              <View style={styles.statsGrid}>
-                <StatItem label="Cycles tracked" value={`${stats.count}`} colors={colors} />
-                <StatItem label="Average length" value={`${stats.avg} days`} colors={colors} />
-                <StatItem label="Shortest" value={`${stats.shortest} days`} colors={colors} />
-                <StatItem label="Longest" value={`${stats.longest} days`} colors={colors} />
-                <StatItem
-                  label="Regularity"
-                  value={stats.stddev <= 3 ? 'Regular' : stats.stddev <= 5 ? 'Somewhat regular' : 'Irregular'}
-                  colors={colors}
-                />
-              </View>
-            </View>
-          ) : (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Cycle Statistics</Text>
-              <Text style={styles.emptyText}>
-                Complete at least one full cycle to see statistics here.
-              </Text>
-            </View>
-          )}
-
-          {/* Health condition insights */}
-          {profile.healthConditions.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Your Conditions</Text>
-              {profile.healthConditions.map((condId) => {
-                const condition = CONDITIONS_BY_ID[condId];
-                if (!condition) return null;
-                return (
-                  <View key={condId} style={styles.conditionItem}>
-                    <Text style={styles.conditionLabel}>{condition.label}</Text>
-                    <Text style={styles.conditionInsight}>{condition.insight}</Text>
+            {/* Cycle statistics */}
+            <Animated.View key={`stats-${focusKey}`} entering={FadeInDown.duration(400).delay(250)}>
+              {stats ? (
+                <View className="p-5 rounded-[14px] mb-3" style={{ backgroundColor: colors.surface, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}>
+                  <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>Cycle Statistics</Text>
+                  <View className="flex-row flex-wrap gap-4">
+                    <StatItem label="Cycles tracked" value={`${stats.count}`} />
+                    <StatItem label="Average length" value={`${stats.avg} days`} />
+                    <StatItem label="Shortest" value={`${stats.shortest} days`} />
+                    <StatItem label="Longest" value={`${stats.longest} days`} />
+                    <StatItem
+                      label="Regularity"
+                      value={stats.stddev <= 3 ? 'Regular' : stats.stddev <= 5 ? 'Somewhat regular' : 'Irregular'}
+                    />
                   </View>
-                );
-              })}
-            </View>
-          )}
-
-          {/* Prediction confidence */}
-          {prediction && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Prediction Quality</Text>
-              <Text style={styles.predictionInfo}>
-                {prediction.confidence === 'learning'
-                  ? 'We\'re still learning your pattern. Log more periods for better predictions.'
-                  : prediction.confidence === 'low'
-                  ? 'Predictions are approximate. Your cycles show some variation.'
-                  : prediction.confidence === 'medium'
-                  ? 'Predictions are getting more accurate as we learn your pattern.'
-                  : 'Your cycles are very consistent. Predictions should be accurate.'}
-              </Text>
-              {prediction.isIrregular && (
-                <Text style={styles.irregularNote}>
-                  Your cycles show significant variation (±{prediction.windowDays} days). This is
-                  common and doesn't necessarily indicate a problem.
-                </Text>
+                </View>
+              ) : (
+                <View className="p-5 rounded-[14px] mb-3" style={{ backgroundColor: colors.surface, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}>
+                  <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>Cycle Statistics</Text>
+                  <Text className="text-sm" style={{ color: colors.textMuted }}>
+                    Complete at least one full cycle to see statistics here.
+                  </Text>
+                </View>
               )}
-            </View>
-          )}
-        </ScrollView>
-      ) : (
-        <View style={styles.yearContainer}>
-          {/* Year navigation */}
-          <View style={styles.nav}>
-            <TouchableOpacity onPress={handlePrevYear} style={styles.navButton}>
-              <Text style={styles.navText}>‹</Text>
-            </TouchableOpacity>
-            <Text style={styles.navTitle}>{currentYear}</Text>
-            <TouchableOpacity onPress={handleNextYear} style={styles.navButton}>
-              <Text style={styles.navText}>›</Text>
-            </TouchableOpacity>
-          </View>
+            </Animated.View>
 
-          <YearInPixels year={currentYear} onSelectMonth={() => {}} />
-        </View>
-      )}
+            {/* Symptom Patterns (Premium Plus) */}
+            <Animated.View key={`patterns-${focusKey}`} entering={FadeInDown.duration(400).delay(300)}>
+              <SymptomPatternsSection patterns={patterns} />
+            </Animated.View>
+
+            {/* Health condition insights */}
+            {profile.healthConditions.length > 0 && (
+              <Animated.View key={`conditions-${focusKey}`} entering={FadeInDown.duration(400).delay(350)}>
+                <View className="p-5 rounded-[14px] mb-3" style={{ backgroundColor: colors.surface, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}>
+                  <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>Your Conditions</Text>
+                  {profile.healthConditions.map((condId) => {
+                    const condition = CONDITIONS_BY_ID[condId];
+                    if (!condition) return null;
+                    return (
+                      <View key={condId} className="mb-3 pb-3 border-b" style={{ borderBottomColor: colors.borderLight }}>
+                        <Text className="text-[15px] font-semibold mb-1" style={{ color: colors.text }}>{condition.label}</Text>
+                        <Text className="text-sm leading-5" style={{ color: colors.textSecondary }}>{condition.insight}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Prediction confidence */}
+            {prediction && (
+              <Animated.View key={`quality-${focusKey}`} entering={FadeInDown.duration(400).delay(350)}>
+                <View className="p-5 rounded-[14px] mb-3" style={{ backgroundColor: colors.surface, shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}>
+                  <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>Prediction Quality</Text>
+                  <Text className="text-sm leading-5" style={{ color: colors.textSecondary }}>
+                    {prediction.confidence === 'learning'
+                      ? 'We\'re still learning your pattern. Log more periods for better predictions.'
+                      : prediction.confidence === 'low'
+                      ? 'Predictions are approximate. Your cycles show some variation.'
+                      : prediction.confidence === 'medium'
+                      ? 'Predictions are getting more accurate as we learn your pattern.'
+                      : 'Your cycles are very consistent. Predictions should be accurate.'}
+                  </Text>
+                  {prediction.isIrregular && (
+                    <Text className="text-[13px] italic mt-2" style={{ color: colors.textTertiary }}>
+                      Your cycles show significant variation ({'\u00B1'}{prediction.windowDays} days). This is
+                      common and doesn't necessarily indicate a problem.
+                    </Text>
+                  )}
+                </View>
+              </Animated.View>
+            )}
+          </ScrollView>
+        ) : viewMode === 'trends' ? (
+          <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingTop: 0, paddingBottom: barInsets.bottom + 32 }}>
+            <TrendGraphsSection />
+            <ExtendedAnalyticsSection />
+          </ScrollView>
+        ) : (
+          <View className="flex-1 px-4">
+            {/* Year navigation */}
+            <View className="flex-row justify-between items-center mb-3">
+              <TouchableOpacity onPress={handlePrevYear} className="p-3 min-w-[44px] min-h-[44px] justify-center items-center" accessibilityLabel="Previous year" accessibilityRole="button">
+                <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u2039'}</Text>
+              </TouchableOpacity>
+              <Text className="text-lg font-bold tracking-tight" style={{ color: colors.text }}>{currentYear}</Text>
+              <TouchableOpacity onPress={handleNextYear} className="p-3 min-w-[44px] min-h-[44px] justify-center items-center" accessibilityLabel="Next year" accessibilityRole="button">
+                <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u203A'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <YearInPixels year={currentYear} onSelectMonth={(month) => {
+              setCurrentYear(month.getFullYear());
+              setViewMode('trends');
+            }} />
+          </View>
+        )}
+      </AnimatedViewSwitcher>
     </View>
     </ScreenWithFlowers>
   );
 }
 
-function StatItem({ label, value, colors }: { label: string; value: string; colors: ThemeColors }) {
+function StatItem({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
   return (
-    <View style={statStyles.statItem}>
-      <Text style={[statStyles.statValue, { color: colors.primary }]}>{value}</Text>
-      <Text style={[statStyles.statLabel, { color: colors.textTertiary }]}>{label}</Text>
+    <View style={{ minWidth: '40%' }}>
+      <Text className="text-xl font-bold" style={{ color: colors.primary }}>{value}</Text>
+      <Text className="text-[13px] mt-0.5" style={{ color: colors.textTertiary }}>{label}</Text>
     </View>
   );
 }
-
-const statStyles = StyleSheet.create({
-  statItem: {
-    minWidth: '40%',
-  },
-  statValue: {
-    fontSize: fs(20),
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    fontSize: fs(13),
-    marginTop: s(2),
-  },
-});
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    outerContainer: {
-      flex: 1,
-    },
-    pillWrapper: {
-      paddingHorizontal: s(16),
-      paddingTop: s(8),
-      paddingBottom: s(12),
-    },
-    pillContainer: {
-      flexDirection: 'row',
-      backgroundColor: colors.surfaceTertiary,
-      borderRadius: s(22),
-      padding: s(3),
-    },
-    pill: {
-      flex: 1,
-      paddingVertical: s(9),
-      alignItems: 'center',
-      borderRadius: s(20),
-    },
-    pillActive: {
-      backgroundColor: colors.primary,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: s(2) },
-      shadowOpacity: 0.25,
-      shadowRadius: s(4),
-      elevation: 2,
-    },
-    pillText: {
-      fontSize: fs(14),
-      fontWeight: '600',
-      color: colors.textTertiary,
-    },
-    pillTextActive: {
-      color: colors.onPrimary,
-      fontWeight: '700',
-    },
-    container: {
-      flex: 1,
-    },
-    content: {
-      padding: s(16),
-      paddingTop: 0,
-      paddingBottom: s(80),
-    },
-    yearContainer: {
-      flex: 1,
-      padding: s(16),
-      paddingTop: 0,
-    },
-    nav: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: s(12),
-    },
-    navButton: {
-      padding: s(12),
-      minWidth: s(44),
-      minHeight: s(44),
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    navText: {
-      fontSize: fs(28),
-      color: colors.primary,
-      fontWeight: '300',
-      lineHeight: fs(32),
-    },
-    navTitle: {
-      fontSize: fs(18),
-      fontWeight: '700',
-      color: colors.text,
-      letterSpacing: fs(0.3),
-    },
-    card: {
-      backgroundColor: colors.surface,
-      padding: s(20),
-      borderRadius: s(14),
-      marginBottom: s(12),
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: s(1) },
-      shadowOpacity: 0.05,
-      shadowRadius: s(4),
-      elevation: 1,
-    },
-    cardTitle: {
-      fontSize: fs(16),
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: s(12),
-    },
-    emptyText: {
-      fontSize: fs(14),
-      color: colors.textMuted,
-    },
-    statsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: s(16),
-    },
-    conditionItem: {
-      marginBottom: s(12),
-      paddingBottom: s(12),
-      borderBottomWidth: 1,
-      borderBottomColor: colors.borderLight,
-    },
-    conditionLabel: {
-      fontSize: fs(15),
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: s(4),
-    },
-    conditionInsight: {
-      fontSize: fs(14),
-      color: colors.textSecondary,
-      lineHeight: fs(20),
-    },
-    predictionInfo: {
-      fontSize: fs(14),
-      color: colors.textSecondary,
-      lineHeight: fs(20),
-    },
-    irregularNote: {
-      fontSize: fs(13),
-      color: colors.textTertiary,
-      fontStyle: 'italic',
-      marginTop: s(8),
-    },
-  });

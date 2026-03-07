@@ -64,7 +64,7 @@ export function getFertilityLevel(
     return 'high';
   }
 
-  return 'low';
+  return 'none';
 }
 
 export const FERTILITY_DISCLAIMER =

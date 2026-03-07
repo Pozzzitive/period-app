@@ -1,18 +1,11 @@
-import React, { useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '@/src/stores';
 import { HEALTH_CONDITIONS } from '@/src/constants/conditions';
-import { useTheme, type ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
+import { useTheme } from '@/src/theme';
+import { OnboardingProgress } from '@/src/components/common/OnboardingProgress';
 
 export default function HealthConditionsScreen() {
   const router = useRouter();
@@ -20,7 +13,6 @@ export default function HealthConditionsScreen() {
   const addCondition = useUserStore((s) => s.addHealthCondition);
   const removeCondition = useUserStore((s) => s.removeHealthCondition);
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const toggleCondition = (id: string) => {
     if (profile.healthConditions.includes(id)) {
@@ -31,10 +23,15 @@ export default function HealthConditionsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Health Conditions</Text>
-        <Text style={styles.subtitle}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }} accessibilityLabel="Go back" accessibilityRole="button">
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
+        </TouchableOpacity>
+        <OnboardingProgress step={2} />
+        <Text style={{ fontSize: 28, fontWeight: 'bold', color: colors.text, marginBottom: 8 }}>Health Conditions</Text>
+        <Text style={{ fontSize: 15, color: colors.textSecondary, marginBottom: 24 }}>
           Do you have any diagnosed conditions that affect your cycle? This helps
           us show relevant insights. You can change this anytime in settings.
         </Text>
@@ -44,136 +41,59 @@ export default function HealthConditionsScreen() {
           return (
             <TouchableOpacity
               key={condition.id}
-              style={[styles.conditionCard, selected && styles.conditionSelected]}
+              style={{
+                backgroundColor: selected ? colors.primaryMuted : colors.surface,
+                padding: 16,
+                borderRadius: 12,
+                marginBottom: 12,
+                borderWidth: 2,
+                borderColor: selected ? colors.primary : colors.border,
+              }}
               onPress={() => toggleCondition(condition.id)}
             >
-              <View style={styles.conditionHeader}>
-                <Text style={[styles.conditionLabel, selected && styles.conditionLabelSelected]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', flex: 1, color: selected ? colors.primary : colors.text }}>
                   {condition.label}
                 </Text>
-                <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
-                  {selected && <Ionicons name="checkmark" size={s(16)} color={colors.onPrimary} />}
+                <View
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    borderWidth: 2,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginLeft: 12,
+                    backgroundColor: selected ? colors.primary : 'transparent',
+                    borderColor: selected ? colors.primary : colors.textDisabled,
+                  }}
+                >
+                  {selected && <Ionicons name="checkmark" size={16} color={colors.onPrimary} />}
                 </View>
               </View>
-              <Text style={styles.conditionDesc}>{condition.description}</Text>
+              <Text style={{ fontSize: 13, color: colors.textTertiary, lineHeight: 18 }}>{condition.description}</Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
-      <View style={styles.buttons}>
+      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
         <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => router.push('/(onboarding)/notifications-setup')}
+          style={{ flex: 1, paddingVertical: 16, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.primary }}
+          onPress={() => {
+            profile.healthConditions.forEach(removeCondition);
+            router.push('/(onboarding)/notifications-setup');
+          }}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={{ color: colors.primary, fontSize: 18, fontWeight: '600' }}>Skip</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.button}
+          style={{ flex: 2, backgroundColor: colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: 'center' }}
           onPress={() => router.push('/(onboarding)/notifications-setup')}
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={{ color: colors.onPrimary, fontSize: 18, fontWeight: '600' }}>Continue</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
-
-const createStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: s(24),
-  },
-  content: {
-    paddingTop: s(40),
-    paddingBottom: s(24),
-  },
-  title: {
-    fontSize: fs(28),
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: s(8),
-  },
-  subtitle: {
-    fontSize: fs(15),
-    color: colors.textSecondary,
-    marginBottom: s(24),
-  },
-  conditionCard: {
-    backgroundColor: colors.surface,
-    padding: s(16),
-    borderRadius: s(12),
-    marginBottom: s(12),
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  conditionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryMuted,
-  },
-  conditionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: s(4),
-  },
-  conditionLabel: {
-    fontSize: fs(15),
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-  },
-  conditionLabelSelected: {
-    color: colors.primary,
-  },
-  conditionDesc: {
-    fontSize: fs(13),
-    color: colors.textTertiary,
-    lineHeight: fs(18),
-  },
-  checkbox: {
-    width: s(24),
-    height: s(24),
-    borderRadius: s(12),
-    borderWidth: 2,
-    borderColor: colors.textDisabled,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: s(12),
-  },
-  checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: s(12),
-    marginBottom: s(16),
-  },
-  skipButton: {
-    flex: 1,
-    paddingVertical: s(16),
-    borderRadius: s(12),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  skipText: {
-    color: colors.primary,
-    fontSize: fs(18),
-    fontWeight: '600',
-  },
-  button: {
-    flex: 2,
-    backgroundColor: colors.primary,
-    paddingVertical: s(16),
-    borderRadius: s(12),
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: colors.onPrimary,
-    fontSize: fs(18),
-    fontWeight: '600',
-  },
-});

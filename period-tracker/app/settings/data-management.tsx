@@ -1,28 +1,33 @@
-import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCycleStore, useLogStore, useUserStore, useSettingsStore, useSubscriptionStore, useAuthStore } from '@/src/stores';
-import { exportAsJSON, shareExport } from '@/src/services/data-export';
+import * as Haptics from 'expo-haptics';
+import { exportAsJSON, shareExport, deleteAllData } from '@/src/services/data-export';
+import { PremiumGate } from '@/src/components/common/PremiumGate';
+import { PDFExportSheet } from '@/src/components/settings/PDFExportSheet';
 import { useTheme } from '@/src/theme';
-import type { ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
 
 export default function DataManagementScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const [pdfSheetVisible, setPdfSheetVisible] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
+    setExporting(true);
     try {
-      const uri = exportAsJSON();
+      const uri = await exportAsJSON();
       await shareExport(uri);
     } catch (error) {
       Alert.alert('Export failed', 'Something went wrong while exporting your data.');
+    } finally {
+      setExporting(false);
     }
   };
 
   const handleDeleteAll = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert(
       'Delete all data',
       'This will permanently delete all your data from this device. This action cannot be undone.',
@@ -32,13 +37,22 @@ export default function DataManagementScreen() {
           text: 'Delete everything',
           style: 'destructive',
           onPress: () => {
-            useCycleStore.getState().clearAll();
-            useLogStore.getState().clearAll();
-            useUserStore.getState().clearAll();
-            useSettingsStore.getState().clearAll();
-            useSubscriptionStore.getState().clearAll();
-            useAuthStore.getState().clearAll();
-            router.replace('/(onboarding)/welcome');
+            // Second confirmation
+            Alert.alert(
+              'Are you absolutely sure?',
+              'All cycle data, symptoms, moods, settings, and preferences will be permanently deleted.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, delete all',
+                  style: 'destructive',
+                  onPress: () => {
+                    deleteAllData();
+                    router.replace('/(onboarding)/welcome');
+                  },
+                },
+              ]
+            );
           },
         },
       ]
@@ -46,73 +60,48 @@ export default function DataManagementScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.sectionTitle}>Export</Text>
-      <TouchableOpacity style={styles.card} onPress={handleExport}>
-        <Ionicons name="share-outline" size={s(28)} color={colors.primary} style={styles.cardIcon} />
-        <Text style={styles.cardTitle}>Export as JSON</Text>
-        <Text style={styles.cardDesc}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+      <Text style={{ color: colors.textTertiary }} className="text-[13px] font-semibold uppercase tracking-widest mt-2 mb-2">Export</Text>
+      <TouchableOpacity
+        style={{ backgroundColor: colors.surface, opacity: exporting ? 0.6 : 1 }}
+        className="p-5 rounded-[14px] mb-3"
+        onPress={handleExport}
+        disabled={exporting}
+      >
+        {exporting ? (
+          <ActivityIndicator color={colors.primary} style={{ marginBottom: 8, alignSelf: 'flex-start' }} />
+        ) : (
+          <Ionicons name="share-outline" size={28} color={colors.primary} style={{ marginBottom: 8 }} />
+        )}
+        <Text style={{ color: colors.text }} className="text-[17px] font-semibold mb-1">Export as JSON</Text>
+        <Text style={{ color: colors.textTertiary }} className="text-sm leading-5">
           Download all your data as a JSON file. You can share this with your
           healthcare provider or keep it as a backup.
         </Text>
       </TouchableOpacity>
 
-      <Text style={styles.sectionTitle}>Delete</Text>
-      <TouchableOpacity style={[styles.card, styles.dangerCard]} onPress={handleDeleteAll}>
-        <Ionicons name="trash-outline" size={s(28)} color={colors.destructive} style={styles.cardIcon} />
-        <Text style={[styles.cardTitle, styles.dangerText]}>Delete all data</Text>
-        <Text style={styles.cardDesc}>
+      <PremiumGate>
+        <TouchableOpacity style={{ backgroundColor: colors.surface }} className="p-5 rounded-[14px] mb-3" onPress={() => setPdfSheetVisible(true)}>
+          <Ionicons name="document-text-outline" size={28} color={colors.primary} style={{ marginBottom: 8 }} />
+          <Text style={{ color: colors.text }} className="text-[17px] font-semibold mb-1">Export as PDF</Text>
+          <Text style={{ color: colors.textTertiary }} className="text-sm leading-5">
+            Generate a formatted PDF report with cycle history, statistics, and
+            patterns. Perfect for sharing with your healthcare provider.
+          </Text>
+        </TouchableOpacity>
+      </PremiumGate>
+
+      <Text style={{ color: colors.textTertiary }} className="text-[13px] font-semibold uppercase tracking-widest mt-2 mb-2">Delete</Text>
+      <TouchableOpacity style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.destructiveLight }} className="p-5 rounded-[14px] mb-3" onPress={handleDeleteAll}>
+        <Ionicons name="trash-outline" size={28} color={colors.destructive} style={{ marginBottom: 8 }} />
+        <Text style={{ color: colors.destructive }} className="text-[17px] font-semibold mb-1">Delete all data</Text>
+        <Text style={{ color: colors.textTertiary }} className="text-sm leading-5">
           Permanently remove all your data from this device. This includes all
           cycle data, symptoms, moods, settings, and preferences.
         </Text>
       </TouchableOpacity>
+
+      <PDFExportSheet visible={pdfSheetVisible} onClose={() => setPdfSheetVisible(false)} />
     </ScrollView>
   );
 }
-
-const createStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: s(16),
-    paddingBottom: s(32),
-  },
-  sectionTitle: {
-    fontSize: fs(13),
-    fontWeight: '600',
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: fs(1),
-    marginTop: s(8),
-    marginBottom: s(8),
-  },
-  card: {
-    backgroundColor: colors.surface,
-    padding: s(20),
-    borderRadius: s(14),
-    marginBottom: s(12),
-  },
-  dangerCard: {
-    borderWidth: 1,
-    borderColor: colors.destructiveLight,
-  },
-  cardIcon: {
-    marginBottom: s(8),
-  },
-  cardTitle: {
-    fontSize: fs(17),
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: s(4),
-  },
-  dangerText: {
-    color: colors.destructive,
-  },
-  cardDesc: {
-    fontSize: fs(14),
-    color: colors.textTertiary,
-    lineHeight: fs(20),
-  },
-});

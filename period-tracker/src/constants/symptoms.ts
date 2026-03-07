@@ -14,7 +14,8 @@ export type SymptomCategory =
   | 'skin'
   | 'sexual'
   | 'energy'
-  | 'other';
+  | 'other'
+  | 'custom';
 
 export const SYMPTOM_CATEGORIES: Record<SymptomCategory, string> = {
   pain: 'Pain',
@@ -25,6 +26,7 @@ export const SYMPTOM_CATEGORIES: Record<SymptomCategory, string> = {
   sexual: 'Sexual Health',
   energy: 'Energy & Sleep',
   other: 'Other',
+  custom: 'Custom',
 };
 
 export const SYMPTOMS: SymptomDefinition[] = [
@@ -35,7 +37,7 @@ export const SYMPTOMS: SymptomDefinition[] = [
   { id: 'breast_tenderness', label: 'Breast tenderness', category: 'pain', icon: '💗' },
   { id: 'pelvic_pain', label: 'Pelvic pain', category: 'pain', icon: '🩹', conditionRelevant: ['endometriosis', 'pcos'] },
   { id: 'joint_pain', label: 'Joint pain', category: 'pain', icon: '🦴' },
-  { id: 'migraine', label: 'Migraine', category: 'pain', icon: '💫' },
+  { id: 'migraine', label: 'Migraine', category: 'pain', icon: '🌀' },
 
   // Physical
   { id: 'bloating', label: 'Bloating', category: 'physical', icon: '🎈', conditionRelevant: ['pcos', 'endometriosis'] },
@@ -62,25 +64,25 @@ export const SYMPTOMS: SymptomDefinition[] = [
   // Sexual Health
   { id: 'increased_libido', label: 'Increased libido', category: 'sexual', icon: '❤️‍🔥' },
   { id: 'decreased_libido', label: 'Decreased libido', category: 'sexual', icon: '💔' },
-  { id: 'vaginal_dryness', label: 'Vaginal dryness', category: 'sexual', icon: '🏜️' },
+  { id: 'vaginal_dryness', label: 'Vaginal dryness', category: 'sexual', icon: '🫗' },
   { id: 'painful_intercourse', label: 'Painful intercourse', category: 'sexual', icon: '⚠️', conditionRelevant: ['endometriosis'] },
 
   // Energy & Sleep
   { id: 'insomnia', label: 'Insomnia', category: 'energy', icon: '🌙' },
-  { id: 'oversleeping', label: 'Oversleeping', category: 'energy', icon: '😴' },
+  { id: 'oversleeping', label: 'Oversleeping', category: 'energy', icon: '💤' },
   { id: 'low_energy', label: 'Low energy', category: 'energy', icon: '🔋', conditionRelevant: ['thyroid'] },
-  { id: 'high_energy', label: 'High energy', category: 'energy', icon: '⚡' },
+  { id: 'high_energy', label: 'High energy', category: 'energy', icon: '🚀' },
 
   // Other
   { id: 'cervical_mucus_clear', label: 'Clear cervical mucus', category: 'other', icon: '💧' },
-  { id: 'cervical_mucus_sticky', label: 'Sticky cervical mucus', category: 'other', icon: '💧' },
+  { id: 'cervical_mucus_sticky', label: 'Sticky cervical mucus', category: 'other', icon: '🫠' },
   { id: 'spotting', label: 'Spotting', category: 'other', icon: '🩸', conditionRelevant: ['fibroids', 'endometriosis'] },
-  { id: 'heavy_bleeding', label: 'Heavy bleeding', category: 'other', icon: '🩸', conditionRelevant: ['fibroids', 'bleeding_disorders', 'endometriosis'] },
+  { id: 'heavy_bleeding', label: 'Heavy bleeding', category: 'other', icon: '🩸🩸', conditionRelevant: ['fibroids', 'bleeding_disorders', 'endometriosis'] },
 ];
 
-export const SYMPTOMS_BY_ID = Object.fromEntries(
+export const SYMPTOMS_BY_ID: Record<string, SymptomDefinition | undefined> = Object.fromEntries(
   SYMPTOMS.map((s) => [s.id, s])
-) as Record<string, SymptomDefinition>;
+);
 
 export const SYMPTOMS_BY_CATEGORY = SYMPTOMS.reduce(
   (acc, symptom) => {

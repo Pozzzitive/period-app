@@ -1,6 +1,7 @@
+import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const NAV_BAR_HEIGHT = 44;
+const NAV_BAR_HEIGHT = Platform.OS === 'android' ? 56 : 44;
 const TAB_BAR_HEIGHT = 49;
 
 /** Returns the padding needed to avoid translucent header and tab bar. */

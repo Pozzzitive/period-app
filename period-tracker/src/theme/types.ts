@@ -2,12 +2,11 @@ import type { CyclePhase } from '../constants/phases';
 
 export type ThemeId =
   | 'roseGarden'
-  | 'midnight'
-  | 'cherryBlossom'
+  | 'oceanBreeze'
   | 'lavenderDreams'
   | 'coralSunset'
-  | 'velvetMauve'
-  | 'peonyBlush'
+  | 'forestGlow'
+  | 'goldenHour'
   | 'noir';
 
 export interface ThemeColors {
@@ -87,7 +86,4 @@ export interface ThemeContextValue {
   isDark: boolean;
   colors: ThemeColors;
   setThemeId: (id: ThemeId) => void;
-  s: (size: number) => number;
-  vs: (size: number) => number;
-  fs: (size: number) => number;
 }

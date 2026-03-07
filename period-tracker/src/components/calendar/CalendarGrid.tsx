@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import {
   startOfMonth,
   endOfMonth,
@@ -14,14 +14,13 @@ import {
   addDays,
   isWithinInterval,
 } from 'date-fns';
-import { s, fs } from '@/src/utils/scale';
 import { useCycleStore, useUserStore, useSettingsStore } from '../../stores';
 import { calculatePhase, getCyclePhaseRanges } from '../../engine';
 import { calculateFertilityWindow } from '../../engine';
 import type { PredictedPeriod } from '../../engine';
+import { MIN_CYCLE_LENGTH } from '../../constants/phases';
 import type { CyclePhase } from '../../constants/phases';
 import { useTheme } from '../../theme';
-import type { ThemeColors } from '../../theme';
 
 interface CalendarGridProps {
   month: Date;
@@ -34,13 +33,12 @@ interface CalendarGridProps {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriods, showPredictedPhases }: CalendarGridProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const periods = useCycleStore((s) => s.periods);
   const cycles = useCycleStore((s) => s.cycles);
   const profile = useUserStore((s) => s.profile);
   const fertilityEnabled = useSettingsStore((s) => s.settings.fertilityTrackingEnabled);
 
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const today = new Date();
 
   const calendarDays = useMemo(() => {
@@ -51,7 +49,6 @@ export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriod
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [month]);
 
-  // Build a set of period dates for quick lookup
   const periodDates = useMemo(() => {
     const dates = new Set<string>();
     for (const period of periods) {
@@ -65,33 +62,46 @@ export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriod
     return dates;
   }, [periods, profile.typicalPeriodLength]);
 
-  // Build fertility dates
   const fertilityDates = useMemo(() => {
-    if (!fertilityEnabled || profile.isTeenager || cycles.length === 0) return new Map<string, 'high' | 'peak'>();
+    if (!fertilityEnabled || profile.isTeenager) return new Map<string, 'high' | 'peak'>();
 
     const map = new Map<string, 'high' | 'peak'>();
-    for (const cycle of cycles) {
-      const len = cycle.cycleLength ?? profile.typicalCycleLength;
-      const window = calculateFertilityWindow(cycle.startDate, len);
+
+    const addFertilityWindow = (startDate: string, cycleLength: number) => {
+      const window = calculateFertilityWindow(startDate, cycleLength);
       const start = parseISO(window.fertileStart);
       const end = parseISO(window.fertileEnd);
       const peakStart = parseISO(window.peakStart);
       const peakEnd = parseISO(window.peakEnd);
-
       const days = eachDayOfInterval({ start, end });
       for (const day of days) {
         const key = format(day, 'yyyy-MM-dd');
         if (isWithinInterval(day, { start: peakStart, end: peakEnd })) {
           map.set(key, 'peak');
-        } else {
+        } else if (!map.has(key)) {
           map.set(key, 'high');
         }
       }
-    }
-    return map;
-  }, [cycles, profile.typicalCycleLength, profile.isTeenager, fertilityEnabled]);
+    };
 
-  // Build predicted period dates set
+    // Fertility from actual cycles (skip implausibly short cycles)
+    for (const cycle of cycles) {
+      const len = cycle.cycleLength ?? profile.typicalCycleLength;
+      if (len >= MIN_CYCLE_LENGTH) {
+        addFertilityWindow(cycle.startDate, len);
+      }
+    }
+
+    // Fertility from predicted periods
+    if (predictedPeriods) {
+      for (const pp of predictedPeriods) {
+        addFertilityWindow(pp.startDate, pp.cycleLength);
+      }
+    }
+
+    return map;
+  }, [cycles, profile.typicalCycleLength, profile.isTeenager, fertilityEnabled, predictedPeriods]);
+
   const predictedPeriodDates = useMemo(() => {
     const dates = new Set<string>();
     if (!predictedPeriods) return dates;
@@ -106,7 +116,6 @@ export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriod
     return dates;
   }, [predictedPeriods]);
 
-  // Build predicted phase dates for full cycle coloring
   const predictedPhaseDates = useMemo(() => {
     const map = new Map<string, CyclePhase>();
     if (!showPredictedPhases || !predictedPeriods || predictedPeriods.length === 0) return map;
@@ -126,15 +135,22 @@ export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriod
     return map;
   }, [predictedPeriods, showPredictedPhases]);
 
+
   const getPhaseForDate = (dateStr: string): CyclePhase | null => {
     if (periodDates.has(dateStr)) return 'menstruation';
 
     for (const cycle of cycles) {
-      // Skip completed cycles for dates past their end
       if (cycle.endDate && dateStr >= cycle.endDate) continue;
       const cycleLength = cycle.cycleLength ?? profile.typicalCycleLength;
 
-      // For ongoing cycle, stretch phases to today when period is late
+      // For the ongoing cycle, don't show phases at or past the predicted
+      // period start — those dates belong to the predicted next cycle.
+      // This prevents the ongoing cycle's luteal/PMS phases from extending
+      // past where the prediction says the next period begins.
+      if (!cycle.endDate && predictedPeriods && predictedPeriods.length > 0) {
+        if (dateStr >= predictedPeriods[0].startDate) return null;
+      }
+
       let effectiveLength: number | undefined;
       if (!cycle.endDate) {
         const todayDay = differenceInDays(today, parseISO(cycle.startDate)) + 1;
@@ -148,18 +164,18 @@ export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriod
   };
 
   return (
-    <View style={styles.container}>
+    <View>
       {/* Weekday headers */}
-      <View style={styles.weekdayRow}>
+      <View className="flex-row mb-1">
         {WEEKDAYS.map((day) => (
-          <View key={day} style={styles.weekdayCell}>
-            <Text style={styles.weekdayText}>{day}</Text>
+          <View key={day} style={{ width: '14.2857%', alignItems: 'center', paddingVertical: 8 }}>
+            <Text className="text-[12px] font-semibold" style={{ color: colors.textMuted }}>{day}</Text>
           </View>
         ))}
       </View>
 
       {/* Calendar grid */}
-      <View style={styles.grid}>
+      <View className="flex-row flex-wrap">
         {calendarDays.map((day) => {
           const dateStr = format(day, 'yyyy-MM-dd');
           const isCurrentMonth = isSameMonth(day, month);
@@ -167,46 +183,51 @@ export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriod
           const isSelected = selectedDate === dateStr;
           const isPeriod = periodDates.has(dateStr);
           const isPredicted = !isPeriod && predictedPeriodDates.has(dateStr);
-          const phase = isCurrentMonth ? getPhaseForDate(dateStr) : null;
+          // When a date is a predicted period, skip actual cycle phase so predicted
+          // menstruation styling shows instead of the current cycle's luteal/PMS
+          const phase = isCurrentMonth && !isPredicted ? getPhaseForDate(dateStr) : null;
           const predictedPhase = !phase ? predictedPhaseDates.get(dateStr) : undefined;
           const fertility = fertilityDates.get(dateStr);
 
-          const phaseColor = phase ? colors.phases[phase].color + '55' : undefined;
+          // Append hex alpha to 7-char hex color (#RRGGBB → #RRGGBBAA)
+          const phaseColor = phase
+            ? `${colors.phases[phase].color}${isDark ? '99' : '55'}`
+            : undefined;
           const predictedBg = predictedPhase && !phaseColor
-            ? colors.phases[predictedPhase].color + '30'
+            ? colors.phases[predictedPhase].lightColor
             : undefined;
 
           return (
             <TouchableOpacity
               key={dateStr}
               style={[
-                styles.dayCell,
+                { width: '14.2857%', height: 56, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
                 phaseColor ? { backgroundColor: phaseColor } : undefined,
                 predictedBg ? { backgroundColor: predictedBg } : undefined,
-                isToday && isCurrentMonth && styles.todayCell,
-                isSelected && styles.daySelected,
+                isToday && isCurrentMonth ? { borderWidth: 2, borderColor: colors.primary } : undefined,
+                isSelected ? { borderWidth: 2, borderColor: colors.text } : undefined,
               ]}
               onPress={() => onSelectDay(dateStr)}
               activeOpacity={0.6}
             >
               <Text
                 style={[
-                  styles.dayText,
-                  !isCurrentMonth && styles.dayTextOutside,
-                  isToday && styles.dayTextToday,
-                  isPeriod && styles.dayTextPeriod,
-                  isPredicted && styles.dayTextPredicted,
+                  { fontSize: 15, color: colors.text },
+                  !isCurrentMonth ? { color: colors.textDisabled } : undefined,
+                  isToday ? { fontWeight: 'bold', color: colors.primary } : undefined,
+                  isPeriod ? { fontWeight: 'bold', color: colors.phases.menstruation.color } : undefined,
+                  isPredicted ? { color: colors.phases.menstruation.color, opacity: 0.6 } : undefined,
                 ]}
               >
                 {format(day, 'd')}
               </Text>
-              {isPeriod && <View style={styles.periodDot} />}
-              {isPredicted && <View style={styles.predictedDot} />}
+              {isPeriod && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.phases.menstruation.color, marginTop: 2 }} />}
+              {isPredicted && <View style={{ width: 6, height: 6, borderRadius: 3, borderWidth: 1.5, borderColor: colors.phases.menstruation.color, backgroundColor: 'transparent', marginTop: 2 }} />}
               {fertility === 'peak' && !isPeriod && !isPredicted && (
-                <View style={[styles.fertilityDot, styles.peakDot]} />
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success, marginTop: 2 }} />
               )}
               {fertility === 'high' && !isPeriod && !isPredicted && (
-                <View style={[styles.fertilityDot, styles.highDot]} />
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.successLight, marginTop: 2 }} />
               )}
             </TouchableOpacity>
           );
@@ -215,88 +236,3 @@ export function CalendarGrid({ month, onSelectDay, selectedDate, predictedPeriod
     </View>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    container: {},
-    weekdayRow: {
-      flexDirection: 'row',
-      marginBottom: s(4),
-    },
-    weekdayCell: {
-      width: '14.2857%',
-      alignItems: 'center',
-      paddingVertical: s(8),
-    },
-    weekdayText: {
-      fontSize: fs(12),
-      fontWeight: '600',
-      color: colors.textMuted,
-    },
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-    dayCell: {
-      width: '14.2857%',
-      height: s(56),
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderRadius: s(8),
-    },
-    todayCell: {
-      borderWidth: 2,
-      borderColor: colors.primary,
-    },
-    daySelected: {
-      borderWidth: 2,
-      borderColor: colors.text,
-    },
-    dayText: {
-      fontSize: fs(15),
-      color: colors.text,
-    },
-    dayTextOutside: {
-      color: colors.textDisabled,
-    },
-    dayTextToday: {
-      fontWeight: 'bold',
-      color: colors.primary,
-    },
-    dayTextPeriod: {
-      fontWeight: 'bold',
-      color: colors.phases.menstruation.color,
-    },
-    dayTextPredicted: {
-      color: colors.phases.menstruation.color,
-      opacity: 0.6,
-    },
-    periodDot: {
-      width: s(6),
-      height: s(6),
-      borderRadius: s(3),
-      backgroundColor: colors.phases.menstruation.color,
-      marginTop: s(2),
-    },
-    predictedDot: {
-      width: s(6),
-      height: s(6),
-      borderRadius: s(3),
-      borderWidth: 1.5,
-      borderColor: colors.phases.menstruation.color,
-      backgroundColor: 'transparent',
-      marginTop: s(2),
-    },
-    fertilityDot: {
-      width: s(6),
-      height: s(6),
-      borderRadius: s(3),
-      marginTop: s(2),
-    },
-    peakDot: {
-      backgroundColor: colors.success,
-    },
-    highDot: {
-      backgroundColor: colors.successLight,
-    },
-  });

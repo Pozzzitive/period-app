@@ -51,6 +51,6 @@ export const HEALTH_CONDITIONS: HealthCondition[] = [
   },
 ];
 
-export const CONDITIONS_BY_ID = Object.fromEntries(
+export const CONDITIONS_BY_ID: Record<string, HealthCondition | undefined> = Object.fromEntries(
   HEALTH_CONDITIONS.map((c) => [c.id, c])
-) as Record<string, HealthCondition>;
+);

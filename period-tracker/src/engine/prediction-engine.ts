@@ -1,6 +1,6 @@
 import { differenceInDays, addDays, parseISO, format } from 'date-fns';
 import type { Cycle, PredictionResult, ConfidenceLevel } from '../models';
-import { DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH } from '../constants/phases';
+import { DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, MIN_CYCLE_LENGTH } from '../constants/phases';
 
 // Weights for rolling weighted average (most recent first)
 const CYCLE_WEIGHTS = [0.4, 0.3, 0.15, 0.1, 0.05];
@@ -38,7 +38,8 @@ export function standardDeviation(values: number[]): number {
   if (values.length < 2) return 0;
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   const squaredDiffs = values.map((v) => (v - mean) ** 2);
-  const variance = squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
+  // Use sample stddev (n-1) for better estimate from small cycle counts
+  const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (values.length - 1);
   return Math.sqrt(variance);
 }
 
@@ -64,12 +65,15 @@ export function predictNextPeriod(
 ): PredictionResult | null {
   if (cycles.length === 0) return null;
 
-  // Get completed cycles (those with known cycle length)
-  const completedCycles = cycles.filter((c) => c.cycleLength != null);
+  // Get completed cycles with plausible lengths (filter out test/accidental entries)
+  const completedCycles = cycles.filter(
+    (c) => c.cycleLength != null && c.cycleLength >= MIN_CYCLE_LENGTH
+  );
   const cycleLengths = completedCycles.map((c) => c.cycleLength!);
   const periodLengths = cycles.map((c) => c.periodLength);
 
-  // Calculate predicted lengths
+  // Calculate predicted lengths — fall back to typicalCycleLength when
+  // no plausible completed cycles exist
   const predictedCycleLength =
     cycleLengths.length > 0
       ? weightedAverage(cycleLengths)
@@ -93,10 +97,11 @@ export function predictNextPeriod(
   const confidence = getConfidence(completedCycles.length, stddev);
   const isIrregular = stddev > 5;
 
-  // Calculate fertility window
-  // Ovulation = cycle length - 14 (calendar method)
-  const ovulationDayInCycle = predictedCycleLength - 14;
-  const ovulationDate = addDays(lastPeriodStart, ovulationDayInCycle);
+  // Calculate fertility window for the NEXT (predicted) cycle
+  // Ovulation = cycleLength - 14, but offset by -1 because cycle day 1 = start
+  // This matches fertility-calculator.ts: addDays(start, cycleLength - 15)
+  const ovulationDayOffset = predictedCycleLength - 14;
+  const ovulationDate = addDays(nextStart, ovulationDayOffset - 1);
   const fertileWindowStart = addDays(ovulationDate, -5);
   const fertileWindowEnd = ovulationDate; // ovulation day itself
 
@@ -134,22 +139,38 @@ export interface PredictedPeriod {
 
 /**
  * Predict multiple future periods by chaining forward from the last logged cycle.
+ * Skips any predicted periods that fall entirely in the past.
+ *
+ * @param referenceDate - Optional date to use as "today" (for testing). Defaults to now.
  */
 export function predictMultiplePeriods(
   cycles: Cycle[],
   count: number,
   typicalCycleLength: number = DEFAULT_CYCLE_LENGTH,
   typicalPeriodLength: number = DEFAULT_PERIOD_LENGTH,
+  referenceDate?: Date,
 ): PredictedPeriod[] {
   if (count <= 0 || cycles.length === 0) return [];
 
   const prediction = predictNextPeriod(cycles, typicalCycleLength, typicalPeriodLength);
   if (!prediction) return [];
 
-  const { predictedCycleLength, predictedPeriodLength } = prediction;
+  // Enforce minimum cycle length to avoid meaningless predictions from
+  // closely-logged periods (e.g. corrections or accidental double-logs)
+  const predictedCycleLength = Math.max(prediction.predictedCycleLength, MIN_CYCLE_LENGTH);
+  const predictedPeriodLength = prediction.predictedPeriodLength;
   const results: PredictedPeriod[] = [];
 
+  const today = referenceDate ?? new Date();
   let currentStart = parseISO(prediction.nextPeriodStart);
+
+  // Skip past predictions until we reach a future one
+  const MAX_SKIP = 50; // safety limit
+  let skipped = 0;
+  while (currentStart < today && skipped < MAX_SKIP) {
+    currentStart = addDays(currentStart, predictedCycleLength);
+    skipped++;
+  }
 
   for (let i = 1; i <= count; i++) {
     const endDate = addDays(currentStart, predictedPeriodLength - 1);

@@ -1,7 +1,6 @@
 import type { FlowerMap, ThemeFlowerPalette, FlowerHue } from './types';
 import type { ThemeId } from '@/src/theme';
 import { RoseFlower } from './RoseFlower';
-import { MoonFlower } from './MoonFlower';
 import { SakuraFlower } from './SakuraFlower';
 import { LavenderFlower } from './LavenderFlower';
 import { TropicalFlower } from './TropicalFlower';
@@ -11,12 +10,11 @@ import { NoirBotanical } from './NoirBotanical';
 
 export const FLOWER_MAP: FlowerMap = {
   roseGarden: RoseFlower,
-  midnight: MoonFlower,
-  cherryBlossom: SakuraFlower,
+  oceanBreeze: SakuraFlower,
   lavenderDreams: LavenderFlower,
   coralSunset: TropicalFlower,
-  velvetMauve: DahliaFlower,
-  peonyBlush: PeonyFlower,
+  forestGlow: DahliaFlower,
+  goldenHour: PeonyFlower,
   noir: NoirBotanical,
 };
 
@@ -40,32 +38,18 @@ export const FLOWER_PALETTES: Record<ThemeId, ThemeFlowerPalette> = {
       { color1: '#F06B8A', color2: '#F090A8', color3: '#F8C0D0', center: '#3A1520' },
     ],
   },
-  midnight: {
+  oceanBreeze: {
     light: [
-      { color1: '#C84068', color2: '#E06888', color3: '#F0A0B8', center: '#2E0C18' },
-      { color1: '#D87050', color2: '#E88868', color3: '#F5B898', center: '#3A1810' },
-      { color1: '#A84878', color2: '#C870A0', color3: '#E8A8C8', center: '#280C20' },
-      { color1: '#E86080', color2: '#F088A0', color3: '#F8B8C8', center: '#3A1018' },
+      { color1: '#087A70', color2: '#0D9488', color3: '#5EEAD4', center: '#03312C' },
+      { color1: '#0E8A7E', color2: '#14B8A6', color3: '#6EE7D0', center: '#053830' },
+      { color1: '#067066', color2: '#0D9488', color3: '#4AD8C0', center: '#022E28' },
+      { color1: '#0C8078', color2: '#10A898', color3: '#5EEAD4', center: '#043430' },
     ],
     dark: [
-      { color1: '#C84068', color2: '#E06888', color3: '#F0A0B8', center: '#2E0C18' },
-      { color1: '#D87050', color2: '#E88868', color3: '#F5B898', center: '#3A1810' },
-      { color1: '#A84878', color2: '#C870A0', color3: '#E8A8C8', center: '#280C20' },
-      { color1: '#E86080', color2: '#F088A0', color3: '#F8B8C8', center: '#3A1018' },
-    ],
-  },
-  cherryBlossom: {
-    light: [
-      { color1: '#C0506E', color2: '#D87898', color3: '#F5B8CC', center: '#5A1828' },
-      { color1: '#D06080', color2: '#E898B0', color3: '#F8D0DC', center: '#4E1420' },
-      { color1: '#B84868', color2: '#D07090', color3: '#F0A8C0', center: '#4A1024' },
-      { color1: '#C85878', color2: '#E08898', color3: '#F5C0D0', center: '#541C2A' },
-    ],
-    dark: [
-      { color1: '#D86080', color2: '#E88BA0', color3: '#F5B0C0', center: '#301018' },
-      { color1: '#C85070', color2: '#E07890', color3: '#F0A8B8', center: '#280C14' },
-      { color1: '#E07088', color2: '#F098B0', color3: '#F8C0D0', center: '#381420' },
-      { color1: '#D06878', color2: '#E89098', color3: '#F5B8C8', center: '#2E1018' },
+      { color1: '#0D9488', color2: '#2DD4BF', color3: '#5EEAD4', center: '#062018' },
+      { color1: '#10A898', color2: '#34D4C0', color3: '#6EE7D0', center: '#08241C' },
+      { color1: '#0B8A80', color2: '#28CCB8', color3: '#50E0CC', center: '#041C14' },
+      { color1: '#0E9C90', color2: '#30D0BC', color3: '#60E4D0', center: '#06201A' },
     ],
   },
   lavenderDreams: {
@@ -96,32 +80,32 @@ export const FLOWER_PALETTES: Record<ThemeId, ThemeFlowerPalette> = {
       { color1: '#D86850', color2: '#F08870', color3: '#F8B8A8', center: '#381410' },
     ],
   },
-  velvetMauve: {
+  forestGlow: {
     light: [
-      { color1: '#803868', color2: '#9C5A8A', color3: '#D0A0C0', center: '#3A1030' },
-      { color1: '#984878', color2: '#B870A0', color3: '#E0B8D0', center: '#421438' },
-      { color1: '#703060', color2: '#904878', color3: '#C890B0', center: '#300C28' },
-      { color1: '#884070', color2: '#A86090', color3: '#D8A8C8', center: '#3C1234' },
+      { color1: '#047857', color2: '#059669', color3: '#6EE7B7', center: '#022E22' },
+      { color1: '#058862', color2: '#10B981', color3: '#7EECC4', center: '#03362A' },
+      { color1: '#036E50', color2: '#059669', color3: '#5EE0AE', center: '#022A1E' },
+      { color1: '#047E5C', color2: '#0CA474', color3: '#6EE7B7', center: '#03302A' },
     ],
     dark: [
-      { color1: '#A06088', color2: '#C88AB8', color3: '#E8B8D8', center: '#201020' },
-      { color1: '#B07098', color2: '#D098C0', color3: '#F0C8E0', center: '#281428' },
-      { color1: '#905078', color2: '#B068A0', color3: '#D8A0C8', center: '#1C0C1C' },
-      { color1: '#A86090', color2: '#C880B0', color3: '#E8B0D0', center: '#241224' },
+      { color1: '#059669', color2: '#34D399', color3: '#6EE7B7', center: '#041E10' },
+      { color1: '#0CA474', color2: '#3CD8A0', color3: '#7EECC4', center: '#062214' },
+      { color1: '#048A60', color2: '#2CCC90', color3: '#60E0B0', center: '#031A0C' },
+      { color1: '#0A9E6E', color2: '#38D49C', color3: '#70E8BC', center: '#04200E' },
     ],
   },
-  peonyBlush: {
+  goldenHour: {
     light: [
-      { color1: '#C04868', color2: '#E07090', color3: '#F8B0C8', center: '#581828' },
-      { color1: '#D06078', color2: '#F098B0', color3: '#F8D0DC', center: '#5A1C2A' },
-      { color1: '#B84060', color2: '#D86888', color3: '#F5A8C0', center: '#4E1424' },
-      { color1: '#D85878', color2: '#F08898', color3: '#F8C8D8', center: '#5C2030' },
+      { color1: '#B45309', color2: '#D97706', color3: '#FCD34D', center: '#4A2008' },
+      { color1: '#C66810', color2: '#E8880E', color3: '#FDE68A', center: '#52280A' },
+      { color1: '#A04A08', color2: '#CA6E06', color3: '#F5C640', center: '#421C06' },
+      { color1: '#BE5E0C', color2: '#E0800A', color3: '#FCD34D', center: '#4E240A' },
     ],
     dark: [
-      { color1: '#D86080', color2: '#F098B0', color3: '#F8C0D0', center: '#2E0C18' },
-      { color1: '#E07088', color2: '#F0A0B8', color3: '#F8D0DC', center: '#341020' },
-      { color1: '#C85070', color2: '#E88898', color3: '#F5B8C8', center: '#280A14' },
-      { color1: '#D86878', color2: '#F090A8', color3: '#F8C8D8', center: '#301018' },
+      { color1: '#D97706', color2: '#FBBF24', color3: '#FDE68A', center: '#281808' },
+      { color1: '#E08810', color2: '#F5C830', color3: '#FDE890', center: '#2E1C0A' },
+      { color1: '#CC6E06', color2: '#F0B020', color3: '#FCDC70', center: '#221406' },
+      { color1: '#D88008', color2: '#F8C028', color3: '#FDE480', center: '#2A1808' },
     ],
   },
   noir: {

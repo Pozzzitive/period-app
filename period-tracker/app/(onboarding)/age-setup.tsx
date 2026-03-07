@@ -1,24 +1,16 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '@/src/stores';
-import { useTheme, type ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
+import { useTheme } from '@/src/theme';
+import { OnboardingProgress } from '@/src/components/common/OnboardingProgress';
 
 export default function AgeSetupScreen() {
   const router = useRouter();
   const updateProfile = useUserStore((s) => s.updateProfile);
   const [birthYear, setBirthYear] = useState('');
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const currentYear = new Date().getFullYear();
   const age = birthYear ? currentYear - parseInt(birthYear, 10) : null;
@@ -36,17 +28,33 @@ export default function AgeSetupScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Your Age</Text>
-        <Text style={styles.subtitle}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 24 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: 8 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }} accessibilityLabel="Go back" accessibilityRole="button">
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
+        </TouchableOpacity>
+        <OnboardingProgress step={1} />
+        <Text style={{ fontSize: 28, fontWeight: 'bold', color: colors.text, marginBottom: 8 }}>Your Age</Text>
+        <Text style={{ fontSize: 15, color: colors.textSecondary, marginBottom: 32 }}>
           This helps us tailor the experience. Younger users get age-appropriate content.
         </Text>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Birth year (optional)</Text>
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 8 }}>Birth year (optional)</Text>
           <TextInput
-            style={styles.input}
+            style={{
+              backgroundColor: colors.surface,
+              paddingVertical: 14,
+              paddingHorizontal: 16,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: colors.border,
+              fontSize: 18,
+              textAlign: 'center',
+              color: colors.text,
+            }}
             keyboardType="number-pad"
             placeholder="e.g. 2005"
             placeholderTextColor={colors.textMuted}
@@ -57,9 +65,9 @@ export default function AgeSetupScreen() {
         </View>
 
         {isTeenager && (
-          <View style={styles.infoBox}>
-            <Ionicons name="leaf-outline" size={s(24)} color={colors.success} />
-            <Text style={styles.infoText}>
+          <View style={{ backgroundColor: colors.successLight, padding: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            <Ionicons name="leaf-outline" size={24} color={colors.success} />
+            <Text style={{ flex: 1, fontSize: 14, color: colors.success, lineHeight: 20 }}>
               We'll enable teenager mode with age-appropriate content. Some features
               like intercourse logging and fertility tracking will be hidden.
             </Text>
@@ -67,118 +75,35 @@ export default function AgeSetupScreen() {
         )}
 
         {birthYear.length === 4 && !isValidAge && (
-          <Text style={styles.errorText}>
+          <Text style={{ color: colors.destructive, fontSize: 14, marginTop: 8 }}>
             Please enter a valid birth year.
           </Text>
         )}
       </View>
 
-      <View style={styles.buttons}>
-        <TouchableOpacity style={styles.skipButton} onPress={() => router.push('/(onboarding)/health-conditions')}>
-          <Text style={styles.skipText}>Skip</Text>
+      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+        <TouchableOpacity
+          style={{ flex: 1, paddingVertical: 16, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.primary }}
+          onPress={() => router.push('/(onboarding)/health-conditions')}
+        >
+          <Text style={{ color: colors.primary, fontSize: 18, fontWeight: '600' }}>Skip</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, !isValidAge && birthYear.length > 0 && styles.buttonDisabled]}
+          style={{
+            flex: 2,
+            backgroundColor: colors.primary,
+            paddingVertical: 16,
+            borderRadius: 12,
+            alignItems: 'center',
+            opacity: !isValidAge && birthYear.length > 0 ? 0.5 : 1,
+          }}
           onPress={handleNext}
           disabled={birthYear.length > 0 && !isValidAge}
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={{ color: colors.onPrimary, fontSize: 18, fontWeight: '600' }}>Continue</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const createStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: s(24),
-  },
-  content: {
-    flex: 1,
-    paddingTop: s(40),
-  },
-  title: {
-    fontSize: fs(28),
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: s(8),
-  },
-  subtitle: {
-    fontSize: fs(15),
-    color: colors.textSecondary,
-    marginBottom: s(32),
-  },
-  inputContainer: {
-    marginBottom: s(20),
-  },
-  label: {
-    fontSize: fs(17),
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: s(8),
-  },
-  input: {
-    backgroundColor: colors.surface,
-    paddingVertical: s(14),
-    paddingHorizontal: s(16),
-    borderRadius: s(10),
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontSize: fs(18),
-    textAlign: 'center',
-  },
-  infoBox: {
-    backgroundColor: colors.successLight,
-    padding: s(16),
-    borderRadius: s(12),
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: s(12),
-  },
-  infoText: {
-    flex: 1,
-    fontSize: fs(14),
-    color: colors.success,
-    lineHeight: fs(20),
-  },
-  errorText: {
-    color: colors.primary,
-    fontSize: fs(14),
-    marginTop: s(8),
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: s(12),
-    marginBottom: s(16),
-  },
-  skipButton: {
-    flex: 1,
-    paddingVertical: s(16),
-    borderRadius: s(12),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  skipText: {
-    color: colors.primary,
-    fontSize: fs(18),
-    fontWeight: '600',
-  },
-  button: {
-    flex: 2,
-    backgroundColor: colors.primary,
-    paddingVertical: s(16),
-    borderRadius: s(12),
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.onPrimary,
-    fontSize: fs(18),
-    fontWeight: '600',
-  },
-});

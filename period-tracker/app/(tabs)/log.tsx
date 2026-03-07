@@ -1,10 +1,14 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { format, addMonths, subMonths } from 'date-fns';
 import { todayString } from '@/src/utils/dates';
-import { useLogStore } from '@/src/stores';
+import { useFocusKey } from '@/src/hooks';
 import { TeenagerGate } from '@/src/components/common/TeenagerGate';
+import { AnimatedPillToggle, usePillSwipe } from '@/src/components/common/AnimatedPillToggle';
+import { AnimatedViewSwitcher } from '@/src/components/common/AnimatedViewSwitcher';
 import { IntercourseCalendarGrid } from '@/src/components/log/IntercourseCalendarGrid';
 import { IntercourseYearInPixels } from '@/src/components/log/IntercourseYearInPixels';
 import { IntercourseDetailSheet } from '@/src/components/log/IntercourseDetailSheet';
@@ -13,38 +17,30 @@ import { ScreenWithFlowers } from '@/src/components/decorations/ScreenWithFlower
 import { FlowerBackground } from '@/src/components/decorations/FlowerBackground';
 import { useBarInsets } from '@/src/hooks/useBarInsets';
 import { useTheme } from '@/src/theme';
-import type { ThemeColors } from '@/src/theme';
-import { s, fs } from '@/src/utils/scale';
 
 type ViewMode = 'monthly' | 'yearly';
+
+const VIEW_OPTIONS = [
+  { value: 'monthly' as const, label: 'Monthly' },
+  { value: 'yearly' as const, label: 'Yearly' },
+];
 
 export default function LogScreen() {
   const { colors } = useTheme();
   const barInsets = useBarInsets();
+  const focusKey = useFocusKey();
   const today = todayString();
-  const log = useLogStore((s) => s.logs[today]);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
+  const swipeHandlers = usePillSwipe(VIEW_OPTIONS, viewMode, setViewMode);
 
-  // Detail sheet (edit existing entries)
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailDate, setDetailDate] = useState(today);
 
-  // Add sheet (compose new entry)
   const [addVisible, setAddVisible] = useState(false);
   const [addDate, setAddDate] = useState(today);
-
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const entries = log?.intercourse;
-  const hasEntries = entries && entries.length > 0;
-
-  const handleAddEntry = useCallback(() => {
-    setAddDate(today);
-    setAddVisible(true);
-  }, [today]);
 
   const handlePrevMonth = useCallback(() => {
     setCurrentMonth((m) => subMonths(m, 1));
@@ -67,6 +63,17 @@ export default function LogScreen() {
     setDetailVisible(true);
   }, []);
 
+  const handleAddFromDetail = useCallback(() => {
+    setAddDate(detailDate);
+    setDetailVisible(false);
+    setAddVisible(true);
+  }, [detailDate]);
+
+  const handleAddForToday = useCallback(() => {
+    setAddDate(today);
+    setAddVisible(true);
+  }, [today]);
+
   const handleSelectMonth = useCallback((month: Date) => {
     setCurrentMonth(month);
     setViewMode('monthly');
@@ -76,105 +83,98 @@ export default function LogScreen() {
     <ScreenWithFlowers backgroundColor={colors.background}>
     <TeenagerGate
       fallback={
-        <View style={[styles.innerContainer, { paddingTop: barInsets.top + s(16), paddingBottom: barInsets.bottom + s(16) }]}>
+        <View
+          className="flex-1 px-4"
+          style={{ paddingTop: barInsets.top + 16, paddingBottom: barInsets.bottom + 16 }}
+        >
           <FlowerBackground />
-          <View style={styles.teenPlaceholder}>
-            <Ionicons name="lock-closed-outline" size={s(48)} color={colors.textMuted} />
-            <Text style={styles.teenTitle}>Not available</Text>
-            <Text style={styles.teenDesc}>This section is not available in teenager mode.</Text>
+          <View className="flex-1 justify-center items-center p-8">
+            <Ionicons name="lock-closed-outline" size={48} color={colors.textMuted} />
+            <Text className="mt-4 text-xl font-semibold mb-2" style={{ color: colors.text }}>Not available</Text>
+            <Text className="text-[15px] text-center" style={{ color: colors.textTertiary }}>This section is not available in teenager mode.</Text>
           </View>
         </View>
       }
     >
-      <View style={[styles.innerContainer, { paddingTop: barInsets.top + s(16), paddingBottom: barInsets.bottom + s(16) }]}>
+      <View
+        className="flex-1 px-4"
+        style={{ paddingTop: barInsets.top + 16, paddingBottom: barInsets.bottom + 16 }}
+        {...swipeHandlers}
+      >
         <FlowerBackground />
-        {/* Quick log card */}
-        <View style={styles.quickCard}>
-          <View style={styles.quickCardHeader}>
-            <Text style={styles.quickCardTitle}>Today</Text>
-            {hasEntries && (
-              <TouchableOpacity
-                style={styles.summaryButton}
-                onPress={() => { setDetailDate(today); setDetailVisible(true); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.summaryText}>
-                  ♥ {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
-                </Text>
-                <Ionicons name="chevron-forward" size={s(14)} color={colors.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity
-            style={styles.quickLogButton}
-            onPress={handleAddEntry}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add" size={s(18)} color={colors.primary} />
-            <Text style={styles.quickLogText}>Add entry</Text>
-          </TouchableOpacity>
+
+        <Animated.View key={`content-${focusKey}`} entering={FadeInDown.duration(400).delay(50)} className="flex-1">
+        <View className="mb-5">
+          <AnimatedPillToggle
+            options={VIEW_OPTIONS}
+            selected={viewMode}
+            onSelect={setViewMode}
+          />
         </View>
 
-        {/* View mode pill toggle */}
-        <View style={styles.pillContainer}>
-          <TouchableOpacity
-            style={[styles.pill, viewMode === 'monthly' && styles.pillActive]}
-            onPress={() => setViewMode('monthly')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.pillText, viewMode === 'monthly' && styles.pillTextActive]}>
-              Monthly
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.pill, viewMode === 'yearly' && styles.pillActive]}
-            onPress={() => setViewMode('yearly')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.pillText, viewMode === 'yearly' && styles.pillTextActive]}>
-              Yearly
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Navigation */}
         {viewMode === 'monthly' ? (
-          <View style={styles.nav}>
-            <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
-              <Text style={styles.navText}>‹</Text>
+          <View className="flex-row justify-between items-center mb-3">
+            <TouchableOpacity onPress={handlePrevMonth} className="p-3 min-w-[44px] min-h-[44px] justify-center items-center">
+              <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u2039'}</Text>
             </TouchableOpacity>
-            <Text style={styles.navTitle}>{format(currentMonth, 'MMMM yyyy')}</Text>
-            <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
-              <Text style={styles.navText}>›</Text>
+            <Text className="text-lg font-bold tracking-tight" style={{ color: colors.text }}>{format(currentMonth, 'MMMM yyyy')}</Text>
+            <TouchableOpacity onPress={handleNextMonth} className="p-3 min-w-[44px] min-h-[44px] justify-center items-center">
+              <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u203A'}</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={styles.nav}>
-            <TouchableOpacity onPress={handlePrevYear} style={styles.navButton}>
-              <Text style={styles.navText}>‹</Text>
+          <View className="flex-row justify-between items-center mb-3">
+            <TouchableOpacity onPress={handlePrevYear} className="p-3 min-w-[44px] min-h-[44px] justify-center items-center">
+              <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u2039'}</Text>
             </TouchableOpacity>
-            <Text style={styles.navTitle}>{currentYear}</Text>
-            <TouchableOpacity onPress={handleNextYear} style={styles.navButton}>
-              <Text style={styles.navText}>›</Text>
+            <Text className="text-lg font-bold tracking-tight" style={{ color: colors.text }}>{currentYear}</Text>
+            <TouchableOpacity onPress={handleNextYear} className="p-3 min-w-[44px] min-h-[44px] justify-center items-center">
+              <Text className="text-[28px] font-light leading-8" style={{ color: colors.primary }}>{'\u203A'}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Content */}
-        {viewMode === 'monthly' ? (
-          <IntercourseCalendarGrid month={currentMonth} onSelectDay={handleSelectDay} />
-        ) : (
-          <IntercourseYearInPixels year={currentYear} onSelectMonth={handleSelectMonth} />
-        )}
+        <AnimatedViewSwitcher transitionKey={viewMode}>
+          {viewMode === 'monthly' ? (
+            <View style={{ paddingBottom: 80 }}>
+              <IntercourseCalendarGrid month={currentMonth} onSelectDay={handleSelectDay} />
+            </View>
+          ) : (
+            <View style={{ paddingBottom: 80 }}>
+              <IntercourseYearInPixels year={currentYear} onSelectMonth={handleSelectMonth} />
+            </View>
+          )}
+        </AnimatedViewSwitcher>
+        </Animated.View>
 
-        {/* Edit existing entries sheet */}
+        {/* Floating heart button to add entry for today */}
+        <TouchableOpacity
+          className="absolute w-14 h-14 rounded-full items-center justify-center"
+          style={{
+            right: 16,
+            bottom: barInsets.bottom + 24,
+            backgroundColor: colors.primary,
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 6,
+          }}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleAddForToday(); }}
+          activeOpacity={0.8}
+          accessibilityLabel="Add intimacy entry for today"
+          accessibilityRole="button"
+        >
+          <Ionicons name="heart" size={26} color={colors.onPrimary} />
+        </TouchableOpacity>
+
         <IntercourseDetailSheet
           visible={detailVisible}
           date={detailDate}
           onClose={() => setDetailVisible(false)}
+          onAdd={handleAddFromDetail}
         />
 
-        {/* Add new entry sheet */}
         <IntercourseAddSheet
           visible={addVisible}
           date={addDate}
@@ -185,132 +185,3 @@ export default function LogScreen() {
     </ScreenWithFlowers>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    innerContainer: {
-      flex: 1,
-      paddingHorizontal: s(16),
-    },
-    quickCard: {
-      backgroundColor: colors.surface,
-      padding: s(20),
-      borderRadius: s(16),
-      marginBottom: s(20),
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: s(2) },
-      shadowOpacity: 0.08,
-      shadowRadius: s(8),
-      elevation: 2,
-    },
-    quickCardHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    quickCardTitle: {
-      fontSize: fs(17),
-      fontWeight: '600',
-      color: colors.text,
-    },
-    summaryButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: s(4),
-    },
-    summaryText: {
-      fontSize: fs(14),
-      fontWeight: '600',
-      color: colors.primary,
-    },
-    quickLogButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: s(6),
-      marginTop: s(12),
-      paddingVertical: s(11),
-      borderRadius: s(12),
-      backgroundColor: colors.primaryMuted,
-      borderWidth: 1,
-      borderColor: colors.primaryLight,
-    },
-    quickLogText: {
-      fontSize: fs(14),
-      fontWeight: '700',
-      color: colors.primary,
-    },
-    pillContainer: {
-      flexDirection: 'row',
-      backgroundColor: colors.surfaceTertiary,
-      borderRadius: s(22),
-      padding: s(3),
-      marginBottom: s(20),
-    },
-    pill: {
-      flex: 1,
-      paddingVertical: s(9),
-      alignItems: 'center',
-      borderRadius: s(20),
-    },
-    pillActive: {
-      backgroundColor: colors.primary,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: s(2) },
-      shadowOpacity: 0.25,
-      shadowRadius: s(4),
-      elevation: 2,
-    },
-    pillText: {
-      fontSize: fs(14),
-      fontWeight: '600',
-      color: colors.textTertiary,
-    },
-    pillTextActive: {
-      color: colors.onPrimary,
-      fontWeight: '700',
-    },
-    nav: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: s(12),
-    },
-    navButton: {
-      padding: s(12),
-      minWidth: s(44),
-      minHeight: s(44),
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    navText: {
-      fontSize: fs(28),
-      color: colors.primary,
-      fontWeight: '300',
-      lineHeight: fs(32),
-    },
-    navTitle: {
-      fontSize: fs(18),
-      fontWeight: '700',
-      color: colors.text,
-      letterSpacing: fs(0.3),
-    },
-    teenPlaceholder: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: s(32),
-    },
-    teenTitle: {
-      marginTop: s(16),
-      fontSize: fs(20),
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: s(8),
-    },
-    teenDesc: {
-      fontSize: fs(15),
-      color: colors.textTertiary,
-      textAlign: 'center',
-    },
-  });
