@@ -4,9 +4,15 @@ node_modules/
 # Expo
 .expo/
 dist/
-expo-env.d.ts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
 
 # Build artifacts
+*.hbc
 android/app/build/
 android/.gradle/
 ios/Pods/
@@ -20,10 +26,17 @@ ios/build/
 
 # macOS
 .DS_Store
+*.swp
+*.swo
 
 # Environment
 .env
 .env.*
+
+# IDE
+.idea/
+.vscode/
+*.iml
 
 # Debug
 npm-debug.*
@@ -32,3 +45,8 @@ yarn-error.*
 
 # TypeScript
 *.tsbuildinfo
+
+# Expo prebuild
+period-tracker/android/
+period-tracker/ios/Pods/
+period-tracker/ios/build/
