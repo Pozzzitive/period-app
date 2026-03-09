@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useCycleStore, useLogStore } from '../stores';
+import { useCycleStore, useLogStore, useSettingsStore } from '../stores';
 import { SYMPTOMS } from '../constants/symptoms';
 import { MOODS } from '../constants/moods';
 import { useCustomSymptomStore } from '../stores/custom-symptom-store';
@@ -12,13 +12,18 @@ export function useAnalytics(cycleCount: CycleCountOption = 'all'): CycleAnalyti
   const cycles = useCycleStore((s) => s.cycles);
   const logs = useLogStore((s) => s.logs);
   const customSymptoms = useCustomSymptomStore((s) => s.customSymptoms);
+  const symptomsConsent = useSettingsStore((s) => s.settings.dataCategories.symptoms);
 
   return useMemo(() => {
-    const allSymptomDefs = [
-      ...SYMPTOMS.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
-      ...customSymptoms.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
-    ];
-    const moodDefs = MOODS.map((m) => ({ id: m.id, label: m.label, icon: m.icon }));
+    const allSymptomDefs = symptomsConsent
+      ? [
+          ...SYMPTOMS.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
+          ...customSymptoms.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
+        ]
+      : [];
+    const moodDefs = symptomsConsent
+      ? MOODS.map((m) => ({ id: m.id, label: m.label, icon: m.icon }))
+      : [];
 
     return computeAnalytics(
       logs,
@@ -27,5 +32,5 @@ export function useAnalytics(cycleCount: CycleCountOption = 'all'): CycleAnalyti
       moodDefs,
       cycleCount === 'all' ? undefined : cycleCount,
     );
-  }, [logs, cycles, customSymptoms, cycleCount]);
+  }, [logs, cycles, customSymptoms, cycleCount, symptomsConsent]);
 }

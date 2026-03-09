@@ -19,6 +19,7 @@ interface CustomSymptomState {
   addCustomSymptom: (label: string, icon: string) => CustomSymptom | null;
   updateCustomSymptom: (id: string, updates: Partial<Pick<CustomSymptom, 'label' | 'icon'>>) => void;
   deleteCustomSymptom: (id: string) => void;
+  restoreAll: (customSymptoms: CustomSymptom[]) => void;
   clearAll: () => void;
 }
 
@@ -60,6 +61,8 @@ export const useCustomSymptomStore = create<CustomSymptomState>()(
           customSymptoms: state.customSymptoms.filter((s) => s.id !== id),
         }));
       },
+
+      restoreAll: (customSymptoms) => set({ customSymptoms }),
 
       clearAll: () => set({ customSymptoms: [] }),
     }),

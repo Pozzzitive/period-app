@@ -12,7 +12,9 @@ import { AppThemeProvider, useTheme, themeToVars } from '@/src/theme';
 import { useUserStore, useSettingsStore, useAuthStore } from '@/src/stores';
 import { useNotificationScheduler } from '@/src/hooks';
 import { useWidgetSync } from '@/src/hooks/useWidgetSync';
+import { useSubscriptionSync } from '@/src/hooks/useSubscriptionSync';
 import { LockScreen } from '@/src/components/common/LockScreen';
+import { ensureStorageEncrypted } from '@/src/storage';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -33,7 +35,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      // Encrypt MMKV storage before showing the app
+      ensureStorageEncrypted().finally(() => {
+        SplashScreen.hideAsync();
+      });
     }
   }, [loaded]);
 
@@ -53,6 +58,7 @@ function RootLayoutNav() {
   const onboardingCompleted = useUserStore((s) => s.profile.onboardingCompleted);
   useNotificationScheduler();
   useWidgetSync();
+  useSubscriptionSync();
   const router = useRouter();
   const segments = useSegments();
 
@@ -146,8 +152,9 @@ function RootLayoutNav() {
 
   useEffect(() => {
     const inOnboarding = segments[0] === '(onboarding)';
+    const inPaywall = segments[0] === 'subscription';
 
-    if (!onboardingCompleted && !inOnboarding) {
+    if (!onboardingCompleted && !inOnboarding && !inPaywall) {
       router.replace('/(onboarding)/welcome');
     } else if (onboardingCompleted && inOnboarding) {
       router.replace('/(tabs)');
@@ -178,6 +185,7 @@ function RootLayoutNav() {
         <Stack.Screen name="settings/data-management" options={{ title: 'Data Management', headerBackTitle: 'Back' }} />
         <Stack.Screen name="settings/teenager-mode" options={{ title: 'Teenager Mode', headerBackTitle: 'Back' }} />
         <Stack.Screen name="settings/custom-symptoms" options={{ title: 'Custom Symptoms', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="settings/consent" options={{ title: 'Data Consent', headerBackTitle: 'Back' }} />
         <Stack.Screen name="settings/age" options={{ title: 'Age', headerBackTitle: 'Back' }} />
         <Stack.Screen name="subscription/paywall" options={{ title: 'Premium Plus', presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>

@@ -185,6 +185,8 @@ PODS:
     - ExpoModulesCore
   - ExpoCrypto (55.0.8):
     - ExpoModulesCore
+  - ExpoDocumentPicker (55.0.8):
+    - ExpoModulesCore
   - ExpoDomWebView (55.0.3):
     - ExpoModulesCore
   - ExpoFileSystem (55.0.10):
@@ -252,6 +254,8 @@ PODS:
   - ExpoSplashScreen (55.0.10):
     - ExpoModulesCore
   - ExpoSymbols (55.0.4):
+    - ExpoModulesCore
+  - ExpoTrackingTransparency (55.0.8):
     - ExpoModulesCore
   - ExpoUI (55.0.1):
     - ExpoModulesCore
@@ -2539,6 +2543,7 @@ DEPENDENCIES:
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoBlur (from `../node_modules/expo-blur/ios`)
   - ExpoCrypto (from `../node_modules/expo-crypto/ios`)
+  - ExpoDocumentPicker (from `../node_modules/expo-document-picker/ios`)
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
@@ -2557,6 +2562,7 @@ DEPENDENCIES:
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
+  - ExpoTrackingTransparency (from `../node_modules/expo-tracking-transparency/ios`)
   - "ExpoUI (from `../node_modules/@expo/ui/ios`)"
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - ExpoWidgets (from `../node_modules/expo-widgets/ios`)
@@ -2686,6 +2692,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-blur/ios"
   ExpoCrypto:
     :path: "../node_modules/expo-crypto/ios"
+  ExpoDocumentPicker:
+    :path: "../node_modules/expo-document-picker/ios"
   ExpoDomWebView:
     :path: "../node_modules/@expo/dom-webview/ios"
   ExpoFileSystem:
@@ -2722,6 +2730,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoSymbols:
     :path: "../node_modules/expo-symbols/ios"
+  ExpoTrackingTransparency:
+    :path: "../node_modules/expo-tracking-transparency/ios"
   ExpoUI:
     :path: "../node_modules/@expo/ui/ios"
   ExpoWebBrowser:
@@ -2913,6 +2923,7 @@ SPEC CHECKSUMS:
   ExpoAsset: bdc7bc21fe25d197c3aa7547e14c12c42087d9c9
   ExpoBlur: aaa1443160dec73e53850f1f7010463d645c97d9
   ExpoCrypto: 40320a7d4caa13b1f55691241220d961c7757519
+  ExpoDocumentPicker: 9d82b922be941a74ba52f82df7ba123b334fbb5a
   ExpoDomWebView: f101fb3db4b6eec4163fca51f7507189b7e48661
   ExpoFileSystem: e1a42d7f69f7faae33f4d7d01708f7861f7bd757
   ExpoFont: 1aa465cf9f8ac6b670405becba8b15473581b2dd
@@ -2931,6 +2942,7 @@ SPEC CHECKSUMS:
   ExpoSharing: 5f1435af23bcf740c63b1d322400d1e26bf77393
   ExpoSplashScreen: 6452aefb424acc76347d62482caef9b4e613e59e
   ExpoSymbols: 307fe2d295b4a8e7bb782b4356f1e30e32f400a9
+  ExpoTrackingTransparency: 1d34f3b1cb099257aa2cbe7d37baaabfbf0a2bdc
   ExpoUI: db65f9a5eed67fc6b4789c4ca384cd22220fb359
   ExpoWebBrowser: f13a6e46e44049bbb8ce49ff8aaa4d819c87d1fe
   ExpoWidgets: 164228c902b10736ca6beb6cfd348446d49c2160

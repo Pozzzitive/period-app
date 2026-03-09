@@ -129,6 +129,7 @@ export interface NotificationSettings {
   medications: MedicationReminder[]; // multiple medication reminders
   contraceptionReminder: boolean;
   contraceptionReminderTime?: string; // HH:mm
+  discreetNotifications: boolean; // hide health details from lock screen text
 }
 
 export interface AppLockSettings {

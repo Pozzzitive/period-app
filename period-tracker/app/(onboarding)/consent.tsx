@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Switch, Linking, InteractionManager } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, useUserStore } from '@/src/stores';
@@ -29,8 +29,11 @@ export default function ConsentScreen() {
       },
     });
     setGdprConsent(true);
-    // completeOnboarding triggers navigation via the layout guard
-    completeOnboarding();
+    // Navigate to paywall first, then mark onboarding complete after the
+    // navigation animation finishes so the layout guard sees the paywall
+    // segment instead of redirecting to tabs
+    router.replace('/subscription/paywall?mode=onboarding');
+    InteractionManager.runAfterInteractions(() => completeOnboarding());
   };
 
   return (
@@ -111,9 +114,16 @@ export default function ConsentScreen() {
             {understood && <Ionicons name="checkmark" size={16} color={colors.onPrimary} />}
           </View>
           <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>
-            I understand that my health data is stored locally on my device and
-            I consent to the app processing this data to provide cycle tracking
-            and predictions.
+            I consent to the app processing my health data (GDPR Article 9(2)(a)) stored locally on my device to provide cycle tracking, predictions, and the features I selected above. I can withdraw this consent at any time in Settings {'>'} Data Consent.
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{ marginTop: 12, alignItems: 'center' }}
+          onPress={() => router.push('/settings/privacy')}
+        >
+          <Text style={{ fontSize: 14, color: colors.primary, textDecorationLine: 'underline' }}>
+            Read our full Privacy Policy
           </Text>
         </TouchableOpacity>
       </ScrollView>

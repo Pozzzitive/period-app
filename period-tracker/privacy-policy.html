@@ -33,21 +33,30 @@
 <div class="container">
 
 <h1>Privacy Policy</h1>
-<p class="subtitle">Period Tracker &middot; Last updated: March 5, 2026</p>
+<p class="subtitle">Period Tracker &middot; Last updated: March 9, 2026</p>
 
 <div class="box">
   <p><strong>The short version:</strong> Your health data stays on your device. We don't collect it, we don't send it to any server, and we don't share it with anyone. Period.</p>
 </div>
 
-<h2>1. Who We Are</h2>
-<p>Period Tracker ("the App") is developed and published by <strong>[Your Name / Company]</strong>. For any privacy-related questions, contact us at <strong>[your-email@example.com]</strong>.</p>
+<h2>1. Who We Are (Data Controller)</h2>
+<p>Period Tracker ("the App") is developed and published by <strong>[Your Name]</strong>, an independent developer based in the European Union.</p>
+<p>For any privacy-related questions, contact us at <strong>[your-email@example.com]</strong>.</p>
 
-<h2>2. Our Core Principle</h2>
+<h2>2. Lawful Basis for Processing</h2>
+<p>We process your data under the following lawful bases (GDPR Article 6 and Article 9):</p>
+<ul>
+  <li><strong>Health data (Article 9(2)(a)):</strong> Your explicit consent, which you provide during onboarding. You choose which categories of health data to track (cycle data, symptoms/moods, intercourse logs). You can withdraw consent at any time in Settings &rarr; Data Consent.</li>
+  <li><strong>Purchase data (Article 6(1)(b)):</strong> Necessary for the performance of your purchase contract with Apple or Google.</li>
+  <li><strong>Advertising data (Article 6(1)(a)):</strong> Your consent via the App Tracking Transparency prompt (iOS) or advertising preferences (Android). You can withdraw this at any time.</li>
+</ul>
+
+<h2>3. Our Core Principle</h2>
 <p>Period Tracker is built on a <strong>local-first, privacy-first</strong> architecture. The App is fully functional without an internet connection and without creating an account. All health and personal data is stored exclusively on your device.</p>
 
-<h2>3. Data We Process</h2>
+<h2>4. Data We Process</h2>
 
-<h3>3.1 Health &amp; Personal Data (stored locally only)</h3>
+<h3>4.1 Health &amp; Personal Data (stored locally only)</h3>
 <p>The following data is stored <strong>only on your device</strong> and is never transmitted to us or any third party:</p>
 <ul>
   <li>Menstrual cycle dates and predictions</li>
@@ -56,24 +65,26 @@
   <li>Medication and contraception reminders</li>
   <li>Health conditions you choose to track</li>
   <li>Custom symptom tags</li>
-  <li>App lock PIN (stored as a SHA-256 hash in your device's secure Keychain/Keystore)</li>
+  <li>Photos attached to log entries (stored in the app's local sandbox)</li>
+  <li>App lock PIN (stored as a salted SHA-256 hash in your device's secure Keychain/Keystore)</li>
 </ul>
 
 <div class="box">
   <p><span class="highlight">Important</span> We have <strong>zero access</strong> to this data. We cannot read, recover, or reset it. If you uninstall the App, this data is permanently deleted.</p>
 </div>
 
-<h3>3.2 Purchase Information</h3>
+<h3>4.2 Purchase Information</h3>
 <p>If you make an in-app purchase (one-time app purchase or Premium Plus subscription), the transaction is handled entirely by <strong>Apple (App Store)</strong> or <strong>Google (Google Play)</strong>. We receive only a purchase confirmation token to unlock features. We do not receive your payment details, billing address, or financial information.</p>
 
-<h3>3.3 Advertising</h3>
+<h3>4.3 Advertising</h3>
 <p>The free version of the App may show ads provided by <strong>Google AdMob</strong>. AdMob may collect:</p>
 <ul>
   <li>Device advertising identifier (IDFA on iOS, GAID on Android)</li>
   <li>General device information (model, OS version)</li>
   <li>IP address (for approximate location to serve relevant ads)</li>
 </ul>
-<p><strong>AdMob never has access to your health data.</strong> Ads are never shown on health-related screens. If you purchase the App (one-time purchase), all ads are permanently removed.</p>
+<p><strong>AdMob never has access to your health data.</strong> If you purchase the App (one-time purchase), all ads are permanently removed. For users in Teenager Mode (under 18), ads are served with child-directed treatment enabled: only non-personalized, age-appropriate (G-rated) ads are shown, and no tracking or behavioral profiling occurs.</p>
+<p>On iOS, the App requests your permission via the App Tracking Transparency (ATT) prompt before loading any ad. If you decline, only non-personalized ads are shown.</p>
 <p>You can opt out of personalized advertising:</p>
 <ul>
   <li><strong>iOS:</strong> Settings &rarr; Privacy &rarr; Tracking &rarr; disable for Period Tracker</li>
@@ -81,7 +92,7 @@
 </ul>
 <p>See Google's privacy policy: <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></p>
 
-<h2>4. Data We Do NOT Collect</h2>
+<h2>5. Data We Do NOT Collect</h2>
 <p>We want to be explicit about what we <strong>never</strong> do:</p>
 <ul>
   <li>We do not collect, transmit, or store your health data on any server</li>
@@ -92,42 +103,61 @@
   <li>We do not infer pregnancy or medical conditions from your data</li>
 </ul>
 
-<h2>5. Data Storage &amp; Security</h2>
+<h2>6. Data Storage, Security &amp; Retention</h2>
 
 <table>
-  <tr><th>What</th><th>Where</th><th>Protection</th></tr>
-  <tr><td>Health &amp; cycle data</td><td>Device only (MMKV)</td><td>OS-level app sandboxing</td></tr>
-  <tr><td>App lock PIN</td><td>iOS Keychain / Android Keystore</td><td>SHA-256 hash, hardware-backed</td></tr>
-  <tr><td>Biometric data</td><td>Device secure enclave</td><td>Never leaves hardware; App only receives pass/fail</td></tr>
-  <tr><td>Purchase status</td><td>Device only</td><td>OS-level app sandboxing</td></tr>
+  <tr><th>What</th><th>Where</th><th>Protection</th><th>Retention</th></tr>
+  <tr><td>Health &amp; cycle data</td><td>Device only (MMKV)</td><td>OS-level app sandboxing</td><td>Until you delete it or uninstall the App</td></tr>
+  <tr><td>Photos</td><td>Device only (app sandbox)</td><td>OS-level app sandboxing</td><td>Until you delete it or uninstall the App</td></tr>
+  <tr><td>App lock PIN</td><td>iOS Keychain / Android Keystore</td><td>Salted SHA-256 hash, hardware-backed</td><td>Until you disable app lock or uninstall</td></tr>
+  <tr><td>Biometric data</td><td>Device secure enclave</td><td>Never leaves hardware; App only receives pass/fail</td><td>Managed by OS</td></tr>
+  <tr><td>Purchase status</td><td>Device only</td><td>OS-level app sandboxing</td><td>Preserved across data deletion (restorable from store)</td></tr>
 </table>
 
-<h2>6. Children's Privacy</h2>
-<p>The App includes a <strong>Teenager Mode</strong> for users aged 9-17, which hides age-inappropriate content (intercourse logging, fertility tracking). In compliance with <strong>GDPR Article 8</strong>, users under 16 must have parental consent to use the App. The App does not knowingly collect personal data from children — all data remains on-device regardless of user age.</p>
+<p>You control data retention entirely. We do not set automatic deletion schedules because we have no access to your data. You can delete all data at any time from Settings &rarr; Data Management.</p>
 
-<h2>7. Your Rights (GDPR)</h2>
+<h2>7. Consent Withdrawal</h2>
+<p>Under GDPR Article 7(3), you can withdraw your consent at any time. Withdrawing consent does not affect the lawfulness of processing carried out before withdrawal.</p>
+<ul>
+  <li><strong>Health data consent:</strong> Go to Settings &rarr; Data Consent to disable specific data categories (symptoms, intercourse). Disabling a category hides the logging UI. To delete existing data, use Settings &rarr; Data Management.</li>
+  <li><strong>Advertising consent:</strong> Revoke tracking permission in your device's privacy settings (see Section 4.3).</li>
+</ul>
+
+<h2>8. Children's Privacy</h2>
+<p>The App includes a <strong>Teenager Mode</strong> for users aged 9-17, which hides age-inappropriate content (intercourse logging, fertility tracking). In compliance with <strong>GDPR Article 8</strong>, users under 16 should have parental consent to use the App.</p>
+<p>Users in Teenager Mode receive only non-personalized, G-rated ads with child-directed treatment enabled. No tracking or behavioral profiling occurs for these users. The App does not knowingly collect personal data from children &mdash; all data remains on-device regardless of user age.</p>
+
+<h2>9. Your Rights (GDPR)</h2>
 <p>Since all data is stored locally on your device, you have full and direct control:</p>
 <ul>
-  <li><strong>Access:</strong> All your data is visible within the App at any time</li>
-  <li><strong>Export:</strong> You can export your data as JSON or PDF from Settings &rarr; Data Management</li>
-  <li><strong>Rectification:</strong> You can edit any logged entry directly in the App</li>
-  <li><strong>Deletion:</strong> You can delete all data from Settings &rarr; Data Management &rarr; Delete All Data, or by uninstalling the App</li>
-  <li><strong>Portability:</strong> Data export provides your data in a portable format</li>
+  <li><strong>Access (Article 15):</strong> All your data is visible within the App at any time</li>
+  <li><strong>Export / Portability (Article 20):</strong> Export your data as JSON or PDF from Settings &rarr; Data Management</li>
+  <li><strong>Rectification (Article 16):</strong> Edit any logged entry directly in the App</li>
+  <li><strong>Erasure (Article 17):</strong> Delete all data from Settings &rarr; Data Management &rarr; Delete All Data, or by uninstalling the App</li>
+  <li><strong>Restriction (Article 18):</strong> Disable specific data categories in Settings &rarr; Data Consent</li>
+  <li><strong>Withdraw consent (Article 7(3)):</strong> Withdraw consent at any time in Settings &rarr; Data Consent</li>
 </ul>
 <p>Because we do not collect or store your data on any server, there is nothing for us to delete on our end. Your device is the sole location of your data.</p>
 
-<h2>8. Third-Party Services</h2>
+<h2>10. Right to Lodge a Complaint</h2>
+<p>If you believe your data protection rights have been violated, you have the right to lodge a complaint with a supervisory authority. You can contact the supervisory authority in the EU member state of your habitual residence, place of work, or place of the alleged infringement.</p>
+<p>A list of EU data protection authorities is available at: <a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en">edpb.europa.eu</a></p>
+
+<h2>11. Third-Party Services</h2>
 
 <table>
-  <tr><th>Service</th><th>Purpose</th><th>Data shared</th></tr>
-  <tr><td>Apple App Store / Google Play</td><td>App distribution, in-app purchases</td><td>Purchase tokens (no health data)</td></tr>
-  <tr><td>Google AdMob</td><td>Advertising (free version only)</td><td>Device ID, IP address (no health data)</td></tr>
+  <tr><th>Service</th><th>Purpose</th><th>Data shared</th><th>Privacy policy</th></tr>
+  <tr><td>Apple App Store / Google Play</td><td>App distribution, in-app purchases</td><td>Purchase tokens (no health data)</td><td><a href="https://www.apple.com/legal/privacy/">Apple</a> / <a href="https://policies.google.com/privacy">Google</a></td></tr>
+  <tr><td>Google AdMob</td><td>Advertising (free version only)</td><td>Device ID, IP address (no health data; child-directed for minors)</td><td><a href="https://policies.google.com/privacy">Google</a></td></tr>
 </table>
 
-<h2>9. Changes to This Policy</h2>
+<h2>12. International Data Transfers</h2>
+<p>Your health data never leaves your device, so no international transfer occurs. AdMob may process advertising identifiers in countries outside the EEA; Google's data processing is governed by their <a href="https://privacy.google.com/businesses/gdprcontrollerterms/">Controller Terms</a> and <a href="https://policies.google.com/privacy/frameworks">Privacy Frameworks</a>.</p>
+
+<h2>13. Changes to This Policy</h2>
 <p>If we make material changes to this policy, we will update the "Last updated" date at the top and notify users through an in-app notice. We will never change our core principle: <strong>your health data stays on your device</strong>.</p>
 
-<h2>10. Contact</h2>
+<h2>14. Contact</h2>
 <p>For privacy questions, data protection inquiries, or to exercise your GDPR rights:</p>
 <ul>
   <li>Email: <strong>[your-email@example.com]</strong></li>

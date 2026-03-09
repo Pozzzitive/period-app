@@ -46,8 +46,16 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
 // Reactive selectors — use these in components instead of store methods
 // so that React re-renders when the underlying state changes.
-export const selectIsPremiumPlus = (s: SubscriptionState) =>
-  s.subscription.tier === 'premium_plus' && s.subscription.isActive;
 
+function isSubscriptionActive(s: SubscriptionStatus): boolean {
+  if (s.tier !== 'premium_plus' || !s.isActive) return false;
+  if (s.expiresAt && new Date(s.expiresAt).getTime() < Date.now()) return false;
+  return true;
+}
+
+export const selectIsPremiumPlus = (s: SubscriptionState) =>
+  isSubscriptionActive(s.subscription);
+
+/** Raw check: user hasn't purchased app and has no active subscription. */
 export const selectShouldShowAds = (s: SubscriptionState) =>
-  !s.hasPurchasedApp && !(s.subscription.tier === 'premium_plus' && s.subscription.isActive);
+  !s.hasPurchasedApp && !isSubscriptionActive(s.subscription);

@@ -108,8 +108,8 @@ export function IntercourseAddSheet({ visible, date, onClose }: IntercourseAddSh
             <Text className="text-base" style={{ color: colors.textSecondary }}>Cancel</Text>
           </TouchableOpacity>
           <Text className="text-[17px] font-semibold" style={{ color: colors.text }}>New Entry</Text>
-          <TouchableOpacity onPress={handleDone}>
-            <Text className="text-base font-bold" style={{ color: colors.primary }}>Done</Text>
+          <TouchableOpacity onPress={handleDone} disabled={isProtected === undefined}>
+            <Text className="text-base font-bold" style={{ color: colors.primary, opacity: isProtected === undefined ? 0.35 : 1 }}>Done</Text>
           </TouchableOpacity>
         </View>
 

@@ -32,6 +32,7 @@ const ALL_SKUS = [
 
 // ── State ───────────────────────────────────────────────────
 let isConnected = false;
+let isInitializing = false;
 let purchaseUpdateSub: ReturnType<typeof purchaseUpdatedListener> | null = null;
 let purchaseErrorSub: ReturnType<typeof purchaseErrorListener> | null = null;
 let cachedProducts: ProductOrSubscription[] = [];
@@ -44,28 +45,44 @@ export async function initIAP(
   onPurchase: PurchaseCallback,
   onError: ErrorCallback,
 ): Promise<void> {
-  if (isConnected) return;
-  // Set flag immediately to prevent duplicate calls (#6)
-  isConnected = true;
+  // Prevent concurrent init calls
+  if (isInitializing) return;
+
+  // If already connected (e.g. by restorePurchases), just set up listeners
+  if (isConnected) {
+    setupListeners(onPurchase, onError);
+    return;
+  }
+
+  isInitializing = true;
 
   try {
     await initConnection();
-
-    purchaseUpdateSub = purchaseUpdatedListener(async (purchase) => {
-      // Grant access first, then acknowledge to store (#5)
-      onPurchase(purchase);
-      await finishTransaction({ purchase, isConsumable: false });
-    });
-
-    purchaseErrorSub = purchaseErrorListener((error) => {
-      if (error.code !== ErrorCode.UserCancelled) {
-        onError(error);
-      }
-    });
+    isConnected = true;
+    setupListeners(onPurchase, onError);
   } catch (err) {
-    isConnected = false;
     console.warn('IAP init failed:', err);
+  } finally {
+    isInitializing = false;
   }
+}
+
+function setupListeners(onPurchase: PurchaseCallback, onError: ErrorCallback): void {
+  // Clean up any existing listeners before creating new ones
+  purchaseUpdateSub?.remove();
+  purchaseErrorSub?.remove();
+
+  purchaseUpdateSub = purchaseUpdatedListener(async (purchase) => {
+    // Grant access first, then acknowledge to store (#5)
+    onPurchase(purchase);
+    await finishTransaction({ purchase, isConsumable: false });
+  });
+
+  purchaseErrorSub = purchaseErrorListener((error) => {
+    if (error.code !== ErrorCode.UserCancelled) {
+      onError(error);
+    }
+  });
 }
 
 export function teardownIAP(): void {
@@ -142,6 +159,14 @@ export async function buySubscription(
 // ── Restore ─────────────────────────────────────────────────
 export async function restorePurchases(): Promise<Purchase[]> {
   try {
+    // Ensure connection exists — may be called before the paywall
+    // (e.g. from subscription sync on app foreground).
+    // We establish a connection but DON'T set up purchase listeners here —
+    // those are only set up by initIAP when the paywall opens.
+    if (!isConnected) {
+      await initConnection();
+      isConnected = true;
+    }
     const result = await getAvailablePurchases();
     return Array.isArray(result) ? result : [];
   } catch {

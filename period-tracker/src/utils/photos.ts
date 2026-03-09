@@ -10,7 +10,8 @@ function getFileSystem() {
 
 function getPhotosDir() {
   const { Paths, Directory } = getFileSystem();
-  const dir = new Directory(Paths.document, PHOTOS_DIR);
+  // Use cache directory to prevent iCloud/Google backup of intimate photos
+  const dir = new Directory(Paths.cache, PHOTOS_DIR);
   if (!dir.exists) {
     dir.create();
   }
@@ -67,7 +68,7 @@ export function deletePhoto(uri: string): void {
 export function deleteAllPhotos(): void {
   try {
     const { Paths, Directory } = getFileSystem();
-    const dir = new Directory(Paths.document, PHOTOS_DIR);
+    const dir = new Directory(Paths.cache, PHOTOS_DIR);
     if (dir.exists) {
       dir.delete();
     }

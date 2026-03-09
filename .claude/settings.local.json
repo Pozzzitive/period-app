@@ -36,7 +36,8 @@
       "Bash(npm info:*)",
       "Bash(/Users/bogdan/Mobile_Projects/react_period_app/period-tracker/node_modules/.bin/tsc:*)",
       "Bash(/Users/bogdan/Mobile_Projects/react_period_app/period-tracker/node_modules/.bin/jest --config /Users/bogdan/Mobile_Projects/react_period_app/period-tracker/jest.config.js --no-coverage --rootDir /Users/bogdan/Mobile_Projects/react_period_app/period-tracker)",
-      "Bash(node_modules/.bin/jest --no-cache)"
+      "Bash(node_modules/.bin/jest --no-cache)",
+      "Bash(cat:*)"
     ]
   }
 }

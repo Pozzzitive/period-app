@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useCycleStore, useUserStore } from '@/src/stores';
+import { useCycleStore, useUserStore, useSettingsStore } from '@/src/stores';
 import { CONDITIONS_BY_ID } from '@/src/constants/conditions';
 import { usePrediction, useCyclePhase, useScrollToTopOnFocus, useFocusKey, useSymptomPatterns } from '@/src/hooks';
 import { standardDeviation } from '@/src/engine/prediction-engine';
@@ -35,6 +35,7 @@ export default function InsightsScreen() {
   const profile = useUserStore((s) => s.profile);
   const prediction = usePrediction();
   const phase = useCyclePhase();
+  const symptomsConsent = useSettingsStore((s) => s.settings.dataCategories.symptoms);
   const patterns = useSymptomPatterns();
   const scrollRef = useScrollToTopOnFocus();
   const focusKey = useFocusKey();
@@ -113,10 +114,12 @@ export default function InsightsScreen() {
               )}
             </Animated.View>
 
-            {/* Symptom Patterns (Premium Plus) */}
+            {/* Symptom Patterns (Premium Plus) — hidden if symptom consent withdrawn */}
+            {symptomsConsent && (
             <Animated.View key={`patterns-${focusKey}`} entering={FadeInDown.duration(400).delay(300)}>
               <SymptomPatternsSection patterns={patterns} />
             </Animated.View>
+            )}
 
             {/* Health condition insights */}
             {profile.healthConditions.length > 0 && (

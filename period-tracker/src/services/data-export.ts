@@ -8,6 +8,7 @@ import { useSettingsStore } from '../stores/settings-store';
 import { useAuthStore } from '../stores/auth-store';
 import { useSubscriptionStore } from '../stores/subscription-store';
 import { useCustomSymptomStore } from '../stores/custom-symptom-store';
+import { storage } from '../storage';
 import { deleteAllPhotos } from '../utils/photos';
 import { deleteLocalBackup } from '../crypto/pipeline';
 
@@ -45,6 +46,37 @@ export async function exportAsJSON(): Promise<string> {
   return file.uri;
 }
 
+/**
+ * Restore all app data from an ExportData object.
+ * Does NOT touch subscription store (IAP receipts are preserved).
+ * Preserves current GDPR consent status — consent cannot be re-granted via restore (Article 7).
+ */
+export function restoreFromExport(data: ExportData): void {
+  if (data.periods) {
+    useCycleStore.getState().restoreAll(data.periods);
+  }
+  if (data.logs) {
+    useLogStore.getState().restoreAll(data.logs);
+  }
+  if (data.profile) {
+    useUserStore.getState().restoreAll(data.profile);
+  }
+  if (data.settings) {
+    // Preserve current GDPR consent state — a backup must not silently re-grant consent
+    const current = useSettingsStore.getState().settings;
+    const restoredSettings = {
+      ...data.settings,
+      gdprConsentGiven: current.gdprConsentGiven,
+      gdprConsentDate: current.gdprConsentDate,
+      dataCategories: current.dataCategories,
+    };
+    useSettingsStore.getState().restoreAll(restoredSettings);
+  }
+  if (data.customSymptoms) {
+    useCustomSymptomStore.getState().restoreAll(data.customSymptoms);
+  }
+}
+
 export async function shareExport(uri: string): Promise<void> {
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(uri, {
@@ -53,6 +85,17 @@ export async function shareExport(uri: string): Promise<void> {
     });
   }
 }
+
+/** MMKV keys to clear on data deletion — store names + widget cache. */
+const DELETABLE_MMKV_KEYS = [
+  'cycle-store',
+  'log-store',
+  'user-store',
+  'settings-store',
+  'custom-symptom-store',
+  'auth-store',
+  'widget-data',
+] as const;
 
 export function deleteAllData(): void {
   deleteAllPhotos();
@@ -64,6 +107,12 @@ export function deleteAllData(): void {
   useCustomSymptomStore.getState().clearAll();
   // authStore.clearAll() also clears Keychain PIN + biometric entries
   useAuthStore.getState().clearAll();
-  // Preserve subscription state — it reflects an external IAP purchase
-  // that the user would have to manually restore otherwise.
+
+  // Explicitly remove MMKV keys so no orphan data remains on device (GDPR Article 17)
+  for (const key of DELETABLE_MMKV_KEYS) {
+    storage.remove(key);
+  }
+
+  // Subscription store is NOT deleted — it reflects an external IAP purchase
+  // managed by Apple/Google. The user is informed of this in the deletion dialog.
 }

@@ -12,6 +12,7 @@ interface UserState {
   completeOnboarding: () => void;
   addHealthCondition: (conditionId: string) => void;
   removeHealthCondition: (conditionId: string) => void;
+  restoreAll: (profile: UserProfile) => void;
   clearAll: () => void;
 }
 
@@ -62,6 +63,8 @@ export const useUserStore = create<UserState>()(
             ),
           },
         })),
+
+      restoreAll: (profile) => set({ profile }),
 
       clearAll: () => set({ profile: { ...defaultProfile, createdAt: new Date().toISOString() } }),
     }),

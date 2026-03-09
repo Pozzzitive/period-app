@@ -129,6 +129,25 @@ export default function NotificationsSettingsScreen() {
         All notifications are local and processed on your device. Nothing is sent to any server.
       </Text>
 
+      {/* -- Privacy -- */}
+      <View style={{ backgroundColor: colors.surface }} className="rounded-xl mb-4">
+        <View className="flex-row items-center p-4">
+          <View className="flex-1 mr-3">
+            <Text style={{ color: colors.text }} className="text-base font-medium">Discreet notifications</Text>
+            <Text style={{ color: colors.textTertiary }} className="text-[13px] mt-0.5">
+              {notifications.discreetNotifications !== false
+                ? 'Generic text — no health details visible on lock screen'
+                : 'Detailed — notification text includes health information'}
+            </Text>
+          </View>
+          <Switch
+            value={notifications.discreetNotifications !== false}
+            onValueChange={(val) => updateNotifications({ discreetNotifications: val })}
+            trackColor={{ false: colors.surfaceTertiary, true: colors.switchActive }}
+          />
+        </View>
+      </View>
+
       {/* -- Period section -- */}
       <CollapsibleSection
         title="Period"

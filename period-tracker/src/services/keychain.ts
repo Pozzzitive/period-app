@@ -6,10 +6,10 @@ const SALT_SERVICE = 'com.periodtracker.app.lock.salt';
 const SALT_BYTES = 32;
 
 // Number of SHA-256 iterations for PIN stretching.
-// Each iteration crosses the JS-native bridge, so we keep this moderate
-// to avoid UI freezes. The per-user salt already prevents precomputation.
+// OWASP minimum for PBKDF2-SHA256 is 600k iterations.
+// Each iteration crosses the JS-native bridge, so this takes ~200-500ms.
 // TODO: Replace with native PBKDF2 via react-native-quick-crypto in Phase 3.
-const HASH_ITERATIONS = 1_000;
+const HASH_ITERATIONS = 600_000;
 
 // ── PIN Storage (salted + iterated SHA-256 hashed in Keychain) ────────
 

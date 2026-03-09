@@ -16,6 +16,7 @@ interface CycleState {
   deletePeriod: (id: string) => void;
   endPeriod: (id: string, endDate: string) => void;
   recalculateCycles: () => void;
+  restoreAll: (periods: Period[]) => void;
   clearAll: () => void;
 }
 
@@ -102,6 +103,11 @@ export const useCycleStore = create<CycleState>()(
         });
 
         set({ cycles });
+      },
+
+      restoreAll: (periods) => {
+        set({ periods: [...periods].sort((a, b) => a.startDate.localeCompare(b.startDate)) });
+        get().recalculateCycles();
       },
 
       clearAll: () => set({ periods: [], cycles: [] }),

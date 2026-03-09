@@ -1,1 +1,1 @@
-export { storage, zustandMMKVStorage } from './mmkv';
+export { storage, zustandMMKVStorage, ensureStorageEncrypted } from './mmkv';

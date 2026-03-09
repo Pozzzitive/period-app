@@ -198,6 +198,12 @@ export default function SettingsScreen() {
         showArrow
       />
       <SettingRow
+        label="Data consent"
+        description="Manage your data processing consent"
+        onPress={() => router.push('/settings/consent')}
+        showArrow
+      />
+      <SettingRow
         label="Privacy policy"
         description="How your data is handled"
         onPress={() => router.push('/settings/privacy')}

@@ -20,7 +20,8 @@
         "NSFaceIDUsageDescription": "Period Tracker uses Face ID to protect your private health data when app lock is enabled.",
         "NSCameraUsageDescription": "Period Tracker needs camera access to take photos for your cycle diary entries.",
         "NSPhotoLibraryUsageDescription": "Period Tracker needs photo library access to attach images to your cycle diary entries.",
-        "NSUserTrackingUsageDescription": "This is used only for showing relevant ads. Your health data is never shared."
+        "NSUserTrackingUsageDescription": "This is used only for showing relevant ads. Your health data is never shared.",
+        "GADDelayAppMeasurementInit": true
       }
     },
     "android": {

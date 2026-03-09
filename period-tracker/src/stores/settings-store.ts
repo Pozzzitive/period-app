@@ -15,6 +15,7 @@ interface SettingsState {
   addMedication: (name: string, time: string) => void;
   updateMedication: (id: string, updates: Partial<Omit<MedicationReminder, 'id'>>) => void;
   deleteMedication: (id: string) => void;
+  restoreAll: (settings: AppSettings) => void;
   clearAll: () => void;
 }
 
@@ -32,6 +33,7 @@ const defaultSettings: AppSettings = {
     cycleNotificationTime: '09:00',
     medications: [],
     contraceptionReminder: false,
+    discreetNotifications: true,
   },
   appLock: {
     enabled: false,
@@ -127,6 +129,8 @@ export const useSettingsStore = create<SettingsState>()(
             },
           },
         })),
+
+      restoreAll: (settings) => set({ settings }),
 
       clearAll: () => set({ settings: { ...defaultSettings } }),
     }),

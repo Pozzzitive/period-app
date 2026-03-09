@@ -3,7 +3,7 @@ import { ScrollView, View, Text, TouchableOpacity, TextInput, KeyboardAvoidingVi
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
-import { useLogStore, useUserStore } from '@/src/stores';
+import { useLogStore, useUserStore, useSettingsStore } from '@/src/stores';
 import { SYMPTOMS, SYMPTOMS_BY_CATEGORY, SYMPTOM_CATEGORIES } from '@/src/constants/symptoms';
 import type { SymptomCategory } from '@/src/constants/symptoms';
 import { MOODS } from '@/src/constants/moods';
@@ -34,6 +34,7 @@ export default function DayDetailScreen() {
   const setMoods = useLogStore((s) => s.setMoods);
   const setNotes = useLogStore((s) => s.setNotes);
   const profile = useUserStore((s) => s.profile);
+  const dataCategories = useSettingsStore((s) => s.settings.dataCategories);
 
   const [selectedFlow, setSelectedFlow] = useState<FlowIntensity | undefined>(log?.flow);
   const [selectedSymptoms, setSelectedSymptoms] = useState<SymptomEntry[]>(log?.symptoms ?? []);
@@ -172,7 +173,8 @@ export default function DayDetailScreen() {
 
         </Animated.View>
 
-        {/* Symptoms */}
+        {/* Symptoms — only show if user consented to symptom tracking */}
+        {dataCategories.symptoms && (
         <Animated.View entering={FadeInDown.duration(400).delay(150)}>
         <Text className="text-lg font-semibold mt-5 mb-2" style={{ color: colors.text }}>Symptoms</Text>
         <Text className="text-[13px] mb-2" style={{ color: colors.textTertiary }}>Tap to add, tap again to increase severity (1-3)</Text>
@@ -220,8 +222,10 @@ export default function DayDetailScreen() {
         </PremiumGate>
 
         </Animated.View>
+        )}
 
-        {/* Mood */}
+        {/* Mood — gated by symptoms consent (moods are part of symptom/mood data category) */}
+        {dataCategories.symptoms && (
         <Animated.View entering={FadeInDown.duration(400).delay(250)}>
         <Text className="text-lg font-semibold mt-5 mb-2" style={{ color: colors.text }}>Mood</Text>
         <View className="flex-row flex-wrap gap-2">
@@ -246,6 +250,7 @@ export default function DayDetailScreen() {
         </View>
 
         </Animated.View>
+        )}
 
         {/* Intercourse */}
         <TeenagerGate>

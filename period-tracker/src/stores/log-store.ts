@@ -19,6 +19,7 @@ interface LogState {
   setNotes: (date: string, notes: string) => void;
   updateLog: (date: string, updates: Partial<DailyLog>) => void;
   deleteLog: (date: string) => void;
+  restoreAll: (logs: Record<string, DailyLog>) => void;
   clearAll: () => void;
 }
 
@@ -182,6 +183,8 @@ export const useLogStore = create<LogState>()(
           return { logs: rest };
         });
       },
+
+      restoreAll: (logs) => set({ logs }),
 
       clearAll: () => set({ logs: {} }),
     }),

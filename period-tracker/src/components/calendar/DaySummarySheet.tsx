@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useLogStore, useCycleStore, useUserStore } from '../../stores';
+import { useLogStore, useCycleStore, useUserStore, useSettingsStore } from '../../stores';
 import { calculatePhase } from '../../engine';
 import type { PredictedPeriod } from '../../engine';
 import { PHASES } from '../../constants/phases';
@@ -42,6 +42,7 @@ export function DaySummarySheet({ visible, date, onClose, onEdit, predictedPerio
   const log = useLogStore((s) => s.logs[date]);
   const cycles = useCycleStore((s) => s.cycles);
   const profile = useUserStore((s) => s.profile);
+  const symptomsConsent = useSettingsStore((s) => s.settings.dataCategories.symptoms);
 
   const phaseInfo = useMemo(() => {
     if (!date) return null;
@@ -125,7 +126,7 @@ export function DaySummarySheet({ visible, date, onClose, onEdit, predictedPerio
                 </View>
               )}
 
-              {log.symptoms.length > 0 && (
+              {symptomsConsent && log.symptoms.length > 0 && (
                 <View className="mb-5">
                   <Text className="text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: colors.textMuted }}>Symptoms</Text>
                   <View className="flex-row flex-wrap gap-1.5">
@@ -146,7 +147,7 @@ export function DaySummarySheet({ visible, date, onClose, onEdit, predictedPerio
                 </View>
               )}
 
-              {log.moods.length > 0 && (
+              {symptomsConsent && log.moods.length > 0 && (
                 <View className="mb-5">
                   <Text className="text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: colors.textMuted }}>Mood</Text>
                   <Text className="text-base leading-6" style={{ color: colors.text }}>
